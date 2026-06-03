@@ -1,6 +1,7 @@
 FROM node:20-alpine
 WORKDIR /app
 
+# cache bust: v2
 RUN apk add --no-cache openssl
 
 COPY package*.json ./
