@@ -1,0 +1,1 @@
+NODE_ENV=development  approve-scripts --allow-scripts-pending

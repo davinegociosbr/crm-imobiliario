@@ -1,0 +1,494 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== ENUMS ====================
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  BROKER
+}
+
+enum LeadStatus {
+  NEW
+  IN_PROGRESS
+  QUALIFIED
+  NEGOTIATION
+  CONTRACT
+  WON
+  LOST
+}
+
+enum LeadOrigin {
+  WEBSITE
+  INSTAGRAM
+  FACEBOOK
+  GOOGLE
+  REFERRAL
+  PORTAL_IMOVEIS
+  WHATSAPP
+  PHONE
+  EMAIL
+  WALK_IN
+  OTHER
+}
+
+enum ActivityType {
+  CALL
+  WHATSAPP
+  EMAIL
+  MEETING
+  VISIT
+  PROPOSAL
+  RESERVATION
+  CONTRACT
+  NOTE
+  FOLLOW_UP
+}
+
+enum VisitStatus {
+  SCHEDULED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  RESCHEDULED
+}
+
+enum PropertyType {
+  APARTMENT
+  HOUSE
+  COMMERCIAL
+  LAND
+  RURAL
+  OTHER
+}
+
+enum PropertyStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+  INACTIVE
+}
+
+enum ProposalStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  NEGOTIATING
+}
+
+enum ReservationStatus {
+  ACTIVE
+  EXPIRED
+  CONVERTED
+  CANCELLED
+}
+
+enum SaleStatus {
+  ACTIVE
+  CANCELLED
+  COMPLETED
+}
+
+enum CommissionStatus {
+  PENDING
+  RECEIVED
+  PAID
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum DocumentStatus {
+  PENDING
+  SENT
+  SIGNED
+  REJECTED
+  EXPIRED
+}
+
+enum PipelineStage {
+  INITIAL_CONTACT
+  REDIRECT
+  ATTENDANCE
+  TODAY
+  FOLLOW_UP
+  CLIENTS
+  INACTIVE
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  WIDOWED
+  STABLE_UNION
+}
+
+// ==================== MODELS ====================
+
+model Company {
+  id          String   @id @default(cuid())
+  name        String
+  cnpj        String?  @unique
+  email       String?
+  phone       String?
+  address     String?
+  city        String?
+  state       String?
+  logo        String?
+  website     String?
+  isActive    Boolean  @default(true)
+  plan        String   @default("starter")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users        User[]
+  leads        Lead[]
+  properties   Property[]
+  tasks        Task[]
+  automations  Automation[]
+  auditLogs    AuditLog[]
+
+  @@map("companies")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  companyId    String
+  name         String
+  email        String
+  password     String
+  role         UserRole  @default(BROKER)
+  phone        String?
+  avatar       String?
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  company       Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  leads         Lead[]        @relation("AssignedLeads")
+  activities    Activity[]
+  visits        Visit[]
+  proposals     Proposal[]
+  reservations  Reservation[]
+  sales         Sale[]
+  commissions   Commission[]
+  tasks         Task[]        @relation("AssignedTasks")
+  createdTasks  Task[]        @relation("CreatedTasks")
+  auditLogs     AuditLog[]
+
+  @@unique([email, companyId])
+  @@map("users")
+}
+
+model Lead {
+  id              String        @id @default(cuid())
+  companyId       String
+  assignedUserId  String?
+  name            String
+  cpf             String?
+  rg              String?
+  birthDate       DateTime?
+  maritalStatus   MaritalStatus?
+  phone           String
+  whatsapp        String?
+  email           String?
+  city            String?
+  state           String?
+  incomeRange     String?
+  investmentRange String?
+  interest        String?
+  notes           String?
+  status          LeadStatus    @default(NEW)
+  origin          LeadOrigin    @default(OTHER)
+  pipelineStage   PipelineStage @default(INITIAL_CONTACT)
+  nextAction      String?
+  nextContactAt   DateTime?
+  lostReason      String?
+  potentialValue  Decimal?      @db.Decimal(15, 2)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  company      Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  assignedUser User?        @relation("AssignedLeads", fields: [assignedUserId], references: [id])
+  activities   Activity[]
+  visits       Visit[]
+  proposals    Proposal[]
+  reservations Reservation[]
+  sales        Sale[]
+  tasks        Task[]
+
+  @@index([companyId])
+  @@index([assignedUserId])
+  @@index([status])
+  @@index([pipelineStage])
+  @@map("leads")
+}
+
+model Activity {
+  id            String       @id @default(cuid())
+  leadId        String
+  userId        String
+  type          ActivityType
+  description   String
+  nextAction    String?
+  nextContactAt DateTime?
+  notes         String?
+  isCompleted   Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([leadId])
+  @@map("activities")
+}
+
+model Property {
+  id            String         @id @default(cuid())
+  companyId     String
+  code          String
+  name          String
+  type          PropertyType
+  city          String
+  neighborhood  String?
+  address       String?
+  price         Decimal        @db.Decimal(15, 2)
+  privateArea   Decimal?       @db.Decimal(10, 2)
+  bedrooms      Int?
+  suites        Int?
+  parkingSpots  Int?
+  developer     String?
+  description   String?
+  status        PropertyStatus @default(AVAILABLE)
+  images        String[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  visits       Visit[]
+  proposals    Proposal[]
+  reservations Reservation[]
+  sales        Sale[]
+
+  @@unique([code, companyId])
+  @@index([companyId])
+  @@index([status])
+  @@map("properties")
+}
+
+model Visit {
+  id          String      @id @default(cuid())
+  leadId      String
+  propertyId  String
+  userId      String
+  scheduledAt DateTime
+  address     String?
+  status      VisitStatus @default(SCHEDULED)
+  notes       String?
+  feedback    String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  lead     Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
+
+  @@index([leadId])
+  @@index([userId])
+  @@index([scheduledAt])
+  @@map("visits")
+}
+
+model Proposal {
+  id              String         @id @default(cuid())
+  leadId          String
+  propertyId      String
+  userId          String
+  version         Int            @default(1)
+  propertyValue   Decimal        @db.Decimal(15, 2)
+  downPayment     Decimal?       @db.Decimal(15, 2)
+  installments    Int?
+  installmentValue Decimal?      @db.Decimal(15, 2)
+  status          ProposalStatus @default(DRAFT)
+  notes           String?
+  pdfUrl          String?
+  expiresAt       DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  lead     Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
+
+  @@index([leadId])
+  @@map("proposals")
+}
+
+model Reservation {
+  id              String            @id @default(cuid())
+  leadId          String
+  propertyId      String
+  userId          String
+  reservationValue Decimal          @db.Decimal(15, 2)
+  reservedAt      DateTime          @default(now())
+  expiresAt       DateTime
+  status          ReservationStatus @default(ACTIVE)
+  notes           String?
+  receiptUrl      String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  lead     Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
+
+  @@index([leadId])
+  @@index([propertyId])
+  @@map("reservations")
+}
+
+model Sale {
+  id                String     @id @default(cuid())
+  leadId            String
+  propertyId        String
+  userId            String
+  saleValue         Decimal    @db.Decimal(15, 2)
+  commissionPercent Decimal    @db.Decimal(5, 2)
+  commissionValue   Decimal    @db.Decimal(15, 2)
+  soldAt            DateTime   @default(now())
+  status            SaleStatus @default(ACTIVE)
+  notes             String?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  lead        Lead        @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  property    Property    @relation(fields: [propertyId], references: [id])
+  user        User        @relation(fields: [userId], references: [id])
+  commissions Commission[]
+
+  @@index([userId])
+  @@index([soldAt])
+  @@map("sales")
+}
+
+model Commission {
+  id        String           @id @default(cuid())
+  saleId    String
+  userId    String
+  percent   Decimal          @db.Decimal(5, 2)
+  value     Decimal          @db.Decimal(15, 2)
+  status    CommissionStatus @default(PENDING)
+  paidAt    DateTime?
+  notes     String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  sale Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([saleId])
+  @@map("commissions")
+}
+
+model Task {
+  id          String       @id @default(cuid())
+  companyId   String
+  leadId      String?
+  assignedUserId String
+  createdByUserId String
+  title       String
+  description String?
+  priority    TaskPriority @default(MEDIUM)
+  status      TaskStatus   @default(PENDING)
+  dueAt       DateTime?
+  completedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  company      Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  lead         Lead?   @relation(fields: [leadId], references: [id])
+  assignedUser User    @relation("AssignedTasks", fields: [assignedUserId], references: [id])
+  createdBy    User    @relation("CreatedTasks", fields: [createdByUserId], references: [id])
+
+  @@index([assignedUserId])
+  @@index([companyId])
+  @@index([status])
+  @@map("tasks")
+}
+
+model Automation {
+  id          String   @id @default(cuid())
+  companyId   String
+  name        String
+  description String?
+  trigger     String
+  conditions  Json     @default("{}")
+  actions     Json     @default("[]")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("automations")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  companyId  String
+  userId     String?
+  action     String
+  entity     String
+  entityId   String?
+  oldValues  Json?
+  newValues  Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id])
+
+  @@index([companyId])
+  @@index([entity])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  type      String
+  entityId  String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("notifications")
+}

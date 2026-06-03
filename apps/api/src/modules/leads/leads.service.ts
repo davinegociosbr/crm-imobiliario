@@ -1,0 +1,162 @@
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
+import { LeadStatus, LeadOrigin, PipelineStage } from '@prisma/client';
+
+export class CreateLeadDto {
+  name: string;
+  phone: string;
+  whatsapp?: string;
+  email?: string;
+  cpf?: string;
+  rg?: string;
+  birthDate?: Date;
+  maritalStatus?: any;
+  city?: string;
+  state?: string;
+  incomeRange?: string;
+  investmentRange?: string;
+  interest?: string;
+  notes?: string;
+  origin?: LeadOrigin;
+  potentialValue?: number;
+  assignedUserId?: string;
+}
+
+export class UpdateLeadDto extends CreateLeadDto {
+  status?: LeadStatus;
+  pipelineStage?: PipelineStage;
+  nextAction?: string;
+  nextContactAt?: Date;
+  lostReason?: string;
+}
+
+@Injectable()
+export class LeadsService {
+  constructor(private prisma: PrismaService) {}
+
+  async findAll(companyId: string, filters: any = {}) {
+    const where: any = { companyId };
+
+    if (filters.status) where.status = filters.status;
+    if (filters.origin) where.origin = filters.origin;
+    if (filters.pipelineStage) where.pipelineStage = filters.pipelineStage;
+    if (filters.assignedUserId) where.assignedUserId = filters.assignedUserId;
+    if (filters.search) {
+      where.OR = [
+        { name: { contains: filters.search, mode: 'insensitive' } },
+        { email: { contains: filters.search, mode: 'insensitive' } },
+        { phone: { contains: filters.search } },
+      ];
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.lead.findMany({
+        where,
+        include: {
+          assignedUser: { select: { id: true, name: true, avatar: true } },
+          _count: { select: { activities: true, visits: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: filters.skip || 0,
+        take: filters.take || 50,
+      }),
+      this.prisma.lead.count({ where }),
+    ]);
+
+    return { data, total };
+  }
+
+  async findOne(id: string, companyId: string) {
+    const lead = await this.prisma.lead.findFirst({
+      where: { id, companyId },
+      include: {
+        assignedUser: { select: { id: true, name: true, avatar: true } },
+        activities: {
+          include: { user: { select: { id: true, name: true, avatar: true } } },
+          orderBy: { createdAt: 'desc' },
+        },
+        visits: {
+          include: {
+            property: { select: { id: true, name: true, code: true } },
+            user: { select: { id: true, name: true } },
+          },
+          orderBy: { scheduledAt: 'desc' },
+        },
+        proposals: {
+          include: { property: { select: { id: true, name: true, code: true } } },
+          orderBy: { createdAt: 'desc' },
+        },
+        tasks: {
+          include: { assignedUser: { select: { id: true, name: true } } },
+          orderBy: { createdAt: 'desc' },
+        },
+        sales: {
+          include: { property: { select: { id: true, name: true } } },
+        },
+      },
+    });
+
+    if (!lead) throw new NotFoundException('Lead não encontrado');
+    return lead;
+  }
+
+  async create(companyId: string, userId: string, dto: CreateLeadDto) {
+    return this.prisma.lead.create({
+      data: {
+        ...dto,
+        companyId,
+        assignedUserId: dto.assignedUserId || userId,
+      },
+      include: {
+        assignedUser: { select: { id: true, name: true } },
+      },
+    });
+  }
+
+  async update(id: string, companyId: string, dto: UpdateLeadDto) {
+    await this.findOne(id, companyId);
+    return this.prisma.lead.update({
+      where: { id },
+      data: dto,
+      include: {
+        assignedUser: { select: { id: true, name: true } },
+      },
+    });
+  }
+
+  async updatePipelineStage(id: string, companyId: string, stage: PipelineStage, userId: string) {
+    const lead = await this.findOne(id, companyId);
+
+    await this.prisma.activity.create({
+      data: {
+        leadId: id,
+        userId,
+        type: 'NOTE',
+        description: `Movido para etapa: ${stage}`,
+      },
+    });
+
+    return this.prisma.lead.update({
+      where: { id },
+      data: { pipelineStage: stage },
+    });
+  }
+
+  async remove(id: string, companyId: string) {
+    await this.findOne(id, companyId);
+    await this.prisma.lead.delete({ where: { id } });
+    return { message: 'Lead removido com sucesso' };
+  }
+
+  async getStats(companyId: string) {
+    const [total, newLeads, inProgress, won, lost] = await Promise.all([
+      this.prisma.lead.count({ where: { companyId } }),
+      this.prisma.lead.count({ where: { companyId, status: 'NEW' } }),
+      this.prisma.lead.count({ where: { companyId, status: 'IN_PROGRESS' } }),
+      this.prisma.lead.count({ where: { companyId, status: 'WON' } }),
+      this.prisma.lead.count({ where: { companyId, status: 'LOST' } }),
+    ]);
+
+    return { total, newLeads, inProgress, won, lost };
+  }
+}
