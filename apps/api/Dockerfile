@@ -14,6 +14,6 @@ RUN test -f dist/main.js || (echo "ERROR: dist/main.js not found" && exit 1)
 
 RUN mkdir -p uploads
 
-EXPOSE 3001
+EXPOSE 8080
 
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
