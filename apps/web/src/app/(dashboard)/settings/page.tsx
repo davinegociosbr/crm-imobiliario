@@ -20,7 +20,7 @@ export default function SettingsPage() {
   const { data: users } = useQuery({ queryKey: ['users'], queryFn: () => api.get('/users').then(r => r.data) });
 
   const { register: regCompany, handleSubmit: hsCompany, formState: { isSubmitting: submittingCompany } } = useForm({ values: company });
-  const { register: regUser, handleSubmit: hsUser, reset: resetUser, formState: { isSubmitting: submittingUser } } = useForm({ defaultValues: { role: 'BROKER' } });
+  const { register: regUser, handleSubmit: hsUser, reset: resetUser, formState: { isSubmitting: submittingUser } } = useForm<{ name: string; email: string; role: string; password: string }>({ defaultValues: { role: 'BROKER' } });
 
   const updateCompany = useMutation({
     mutationFn: (data: any) => api.put('/company', data),

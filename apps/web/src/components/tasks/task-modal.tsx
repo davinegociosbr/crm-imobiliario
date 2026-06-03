@@ -7,7 +7,7 @@ import { api } from '@/lib/api';
 
 export function TaskModal({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();
-  const { register, handleSubmit, formState: { isSubmitting } } = useForm({ defaultValues: { priority: 'MEDIUM' } });
+  const { register, handleSubmit, formState: { isSubmitting } } = useForm<{ title: string; description: string; priority: string; dueAt: string; leadId: string }>({ defaultValues: { priority: 'MEDIUM' } });
   const { data: leads } = useQuery({ queryKey: ['leads-select'], queryFn: () => api.get('/leads').then(r => r.data.data) });
 
   const mutation = useMutation({
