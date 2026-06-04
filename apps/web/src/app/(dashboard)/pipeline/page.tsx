@@ -207,7 +207,7 @@ function LeadDetailModal({ lead, onClose }: { lead: any; onClose: () => void }) 
         const v = data[k];
         if (v !== '' && v !== null && v !== undefined) clean[k] = v;
       });
-      if (clean.nextContactAt) clean.nextContactAt = new Date(clean.nextContactAt).toISOString();
+      if (clean.nextContactAt) clean.nextContactAt = new Date(clean.nextContactAt + 'T12:00:00').toISOString();
       return api.put(`/leads/${lead.id}`, clean);
     },
     onSuccess: () => {
@@ -225,7 +225,7 @@ function LeadDetailModal({ lead, onClose }: { lead: any; onClose: () => void }) 
       type: 'NOTE',
       description: data.note,
       nextAction: data.nextAction || undefined,
-      nextContactAt: data.nextContactAt ? new Date(data.nextContactAt).toISOString() : undefined,
+      nextContactAt: data.nextContactAt ? new Date(data.nextContactAt + 'T12:00:00').toISOString() : undefined,
       notes: data.observations || undefined,
     }),
     onSuccess: () => {
