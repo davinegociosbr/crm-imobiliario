@@ -100,12 +100,28 @@ export class LeadsService {
     return lead;
   }
 
+  private sanitize(dto: any) {
+    const clean: any = {};
+    for (const [k, v] of Object.entries(dto)) {
+      if (v === '' || v === undefined) clean[k] = null;
+      else clean[k] = v;
+    }
+    if (clean.potentialValue !== null && clean.potentialValue !== undefined) {
+      clean.potentialValue = Number(clean.potentialValue) || null;
+    }
+    if (clean.birthDate !== null && clean.birthDate !== undefined) {
+      clean.birthDate = new Date(clean.birthDate);
+    }
+    return clean;
+  }
+
   async create(companyId: string, userId: string, dto: CreateLeadDto) {
+    const data = this.sanitize(dto);
     return this.prisma.lead.create({
       data: {
-        ...dto,
+        ...data,
         companyId,
-        assignedUserId: dto.assignedUserId || userId,
+        assignedUserId: data.assignedUserId || userId,
       },
       include: {
         assignedUser: { select: { id: true, name: true } },
@@ -115,9 +131,10 @@ export class LeadsService {
 
   async update(id: string, companyId: string, dto: UpdateLeadDto) {
     await this.findOne(id, companyId);
+    const data = this.sanitize(dto);
     return this.prisma.lead.update({
       where: { id },
-      data: dto,
+      data,
       include: {
         assignedUser: { select: { id: true, name: true } },
       },
