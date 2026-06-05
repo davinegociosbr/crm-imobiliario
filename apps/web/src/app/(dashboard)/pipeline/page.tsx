@@ -189,9 +189,24 @@ function LeadDetailModal({ lead, onClose }: { lead: any; onClose: () => void }) 
     queryFn: () => api.get(`/leads/${lead.id}`).then(r => r.data),
   });
 
-  const { register, handleSubmit, formState: { isSubmitting } } = useForm({
-    values: leadFull || lead,
+  const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm({
+    defaultValues: lead,
   });
+
+  // Sincroniza formulário quando leadFull carregar (inclui campos null como data)
+  useEffect(() => {
+    if (leadFull) {
+      reset({
+        ...leadFull,
+        nextContactAt: leadFull.nextContactAt
+          ? new Date(leadFull.nextContactAt).toISOString().split('T')[0]
+          : '',
+        birthDate: leadFull.birthDate
+          ? new Date(leadFull.birthDate).toISOString().split('T')[0]
+          : '',
+      });
+    }
+  }, [leadFull, reset]);
 
   const { register: regNote, handleSubmit: hsNote, reset: resetNote, formState: { isSubmitting: submittingNote } } = useForm();
 
