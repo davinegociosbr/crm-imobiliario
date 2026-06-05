@@ -601,6 +601,22 @@ function LeadCard({ lead, index, onOpen }: { lead: any; index: number; onOpen: (
     onSuccess: () => qc.invalidateQueries({ queryKey: ['pipeline-kanban'] }),
   });
 
+  const deleteLead = useMutation({
+    mutationFn: () => api.delete(`/leads/${lead.id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['pipeline-kanban'] });
+      toast.success('Lead excluído');
+    },
+    onError: () => toast.error('Erro ao excluir lead'),
+  });
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (confirm(`Excluir "${lead.name}"? Esta ação não pode ser desfeita.`)) {
+      deleteLead.mutate();
+    }
+  };
+
   const currentPriority = PRIORITY_OPTIONS.find(p => p.value === priority) || PRIORITY_OPTIONS[1];
 
   return (
@@ -659,7 +675,7 @@ function LeadCard({ lead, index, onOpen }: { lead: any; index: number; onOpen: (
                 <MessageCircle className="w-2.5 h-2.5" /> WA
               </a>
             )}
-            <div className="flex gap-0.5 ml-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex gap-0.5 ml-auto items-center" onClick={e => e.stopPropagation()}>
               {PRIORITY_OPTIONS.map(p => (
                 <button
                   key={p.value}
@@ -672,6 +688,13 @@ function LeadCard({ lead, index, onOpen }: { lead: any; index: number; onOpen: (
                   {p.label[0]}
                 </button>
               ))}
+              <button
+                onClick={handleDelete}
+                title="Excluir lead"
+                className="w-5 h-5 rounded bg-red-50 dark:bg-red-950/30 text-red-400 hover:bg-red-100 hover:text-red-600 flex items-center justify-center ml-1 transition-colors"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
             </div>
           </div>
         </div>
