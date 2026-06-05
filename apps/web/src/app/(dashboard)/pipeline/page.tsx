@@ -676,18 +676,6 @@ function LeadCard({ lead, index, onOpen }: { lead: any; index: number; onOpen: (
               </a>
             )}
             <div className="flex gap-0.5 ml-auto items-center" onClick={e => e.stopPropagation()}>
-              {PRIORITY_OPTIONS.map(p => (
-                <button
-                  key={p.value}
-                  title={p.label}
-                  onClick={() => { setPriority(p.value); updatePriority.mutate(p.value); }}
-                  className={`w-5 h-5 rounded text-[9px] font-bold transition-all ${
-                    priority === p.value ? `${p.cls} opacity-100` : `${p.cls} opacity-30`
-                  }`}
-                >
-                  {p.label[0]}
-                </button>
-              ))}
               <button
                 onClick={handleDelete}
                 title="Excluir lead"
