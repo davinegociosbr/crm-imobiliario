@@ -601,19 +601,19 @@ function LeadCard({ lead, index, onOpen }: { lead: any; index: number; onOpen: (
     onSuccess: () => qc.invalidateQueries({ queryKey: ['pipeline-kanban'] }),
   });
 
-  const deleteLead = useMutation({
-    mutationFn: () => api.delete(`/leads/${lead.id}`),
+  const removeFromPipeline = useMutation({
+    mutationFn: () => api.put(`/leads/${lead.id}`, { pipelineStage: null }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['pipeline-kanban'] });
-      toast.success('Lead excluído');
+      toast.success('Lead removido do funil (contato mantido em Clientes/Leads)');
     },
-    onError: () => toast.error('Erro ao excluir lead'),
+    onError: () => toast.error('Erro ao remover do funil'),
   });
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm(`Excluir "${lead.name}"? Esta ação não pode ser desfeita.`)) {
-      deleteLead.mutate();
+    if (confirm(`Remover "${lead.name}" do funil?\n\nO contato continuará disponível em Clientes / Leads.`)) {
+      removeFromPipeline.mutate();
     }
   };
 
