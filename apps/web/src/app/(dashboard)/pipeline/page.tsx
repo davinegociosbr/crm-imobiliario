@@ -2,11 +2,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { Phone, MessageCircle, Calendar, Briefcase, X, Loader2, Plus, StickyNote, Clock, Palette, Trash2, Pencil, Check, CheckCircle2, Circle } from 'lucide-react';
+import { Phone, MessageCircle, Calendar, Briefcase, X, Loader2, Plus, StickyNote, Clock, Palette, Trash2, Pencil, Check, CheckCircle2, Circle, Search, Filter, History } from 'lucide-react';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { api } from '@/lib/api';
-import { PIPELINE_STAGES, LEAD_ORIGINS, formatDateTime } from '@/lib/utils';
+import { PIPELINE_STAGES, LEAD_ORIGINS, formatDateTime, LEAD_STATUS } from '@/lib/utils';
 
 // ─── Paleta de cores disponíveis ────────────────────────────────────────────
 const COLOR_OPTIONS = [
@@ -239,7 +239,12 @@ function LeadDetailModal({ lead, onClose }: { lead: any; onClose: () => void }) 
 
   // Filtra apenas atividades manuais (exclui movimentações automáticas do funil)
   const activities = (leadFull?.activities || []).filter(
-    (a: any) => !(a.type === 'NOTE' && a.description?.startsWith('Movido de'))
+    (a: any) => !(a.type === 'NOTE' && a.description?.startsWith('Movido'))
+  );
+
+  // Histórico de etapas (movimentações do funil)
+  const stageHistory = (leadFull?.activities || []).filter(
+    (a: any) => a.type === 'NOTE' && a.description?.startsWith('Movido')
   );
 
   return (
@@ -264,6 +269,7 @@ function LeadDetailModal({ lead, onClose }: { lead: any; onClose: () => void }) 
           {[
             { id: 'edit', label: 'Dados do Cliente' },
             { id: 'notes', label: `Notas (${activities.length})` },
+            { id: 'history', label: `Histórico (${stageHistory.length})` },
           ].map(t => (
             <button
               key={t.id}
@@ -334,6 +340,29 @@ function LeadDetailModal({ lead, onClose }: { lead: any; onClose: () => void }) 
           )}
 
           {/* ABA: NOTAS */}
+          {/* ABA: HISTÓRICO */}
+          {tab === 'history' && (
+            <div className="p-5 space-y-3">
+              {stageHistory.length === 0 && (
+                <p className="text-center text-sm text-slate-400 py-6">Nenhuma movimentação registrada</p>
+              )}
+              {stageHistory.map((a: any) => (
+                <div key={a.id} className="flex items-start gap-3 bg-slate-50 dark:bg-slate-800 rounded-xl p-3">
+                  <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-950/30 shrink-0">
+                    <History className="w-3.5 h-3.5 text-purple-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-slate-700 dark:text-slate-200">{a.description}</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {new Date(a.createdAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      {a.user?.name && ` · ${a.user.name}`}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {tab === 'notes' && (
             <div className="p-5 space-y-4">
               {/* Formulário nova nota */}
@@ -682,6 +711,8 @@ function ColorPicker({ stage, currentColor, onSelect }: { stage: string; current
 export default function PipelinePage() {
   const qc = useQueryClient();
   const [selectedLead, setSelectedLead] = useState<any>(null);
+  const [search, setSearch] = useState('');
+  const [originFilter, setOriginFilter] = useState('');
 
   // Cores salvas no localStorage para persistir entre sessões
   const [stageColors, setStageColors] = useState<Record<string, string>>(() => {
@@ -718,21 +749,61 @@ export default function PipelinePage() {
 
   return (
     <div className="h-full flex flex-col">
-      <p className="text-sm text-slate-500 mb-4">Clique em um card para editar • Arraste para mover entre etapas • <span className="inline-flex items-center gap-1"><Palette className="w-3 h-3" /> para mudar a cor da coluna</span></p>
+      {/* Barra de busca + filtros */}
+      <div className="flex items-center gap-3 mb-4 flex-wrap">
+        <div className="relative flex-1 min-w-[200px] max-w-xs">
+          <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Buscar lead..."
+            className="w-full pl-9 pr-4 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 dark:border-slate-700"
+          />
+        </div>
+        <select
+          value={originFilter}
+          onChange={e => setOriginFilter(e.target.value)}
+          className="py-2 px-3 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 dark:border-slate-700"
+        >
+          <option value="">Todas as origens</option>
+          {Object.entries(LEAD_ORIGINS).map(([k, v]) => (
+            <option key={k} value={k}>{v}</option>
+          ))}
+        </select>
+        {(search || originFilter) && (
+          <button
+            onClick={() => { setSearch(''); setOriginFilter(''); }}
+            className="flex items-center gap-1 text-xs text-slate-500 hover:text-red-500 transition-colors"
+          >
+            <X className="w-3.5 h-3.5" /> Limpar filtros
+          </button>
+        )}
+        <p className="text-xs text-slate-400 ml-auto hidden sm:block">
+          Clique para editar • Arraste para mover • <Palette className="w-3 h-3 inline" /> muda cor
+        </p>
+      </div>
 
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="flex gap-4 flex-1 overflow-x-auto pb-4">
           {STAGES.map((stage) => {
             const stageInfo = PIPELINE_STAGES[stage];
             const color = stageColors[stage] || stageInfo.color;
-            const leads = kanban?.[stage] || [];
+            const leads = (kanban?.[stage] || []).filter((lead: any) => {
+              if (search && !lead.name?.toLowerCase().includes(search.toLowerCase()) && !lead.phone?.includes(search)) return false;
+              if (originFilter && lead.origin !== originFilter) return false;
+              return true;
+            });
 
             return (
               <div key={stage} className="w-72 shrink-0 flex flex-col">
                 <div className={`flex items-center justify-between px-3 py-2 rounded-lg ${color} text-white mb-3`}>
                   <span className="font-medium text-sm">{stageInfo.label}</span>
                   <div className="flex items-center gap-1.5">
-                    <span className="bg-white/20 text-xs px-2 py-0.5 rounded-full">{leads.length}</span>
+                    <span className="bg-white/20 text-xs px-2 py-0.5 rounded-full">
+                      {(search || originFilter) && leads.length !== (kanban?.[stage] || []).length
+                        ? `${leads.length}/${(kanban?.[stage] || []).length}`
+                        : leads.length}
+                    </span>
                     <ColorPicker stage={stage} currentColor={color} onSelect={(c) => updateColor(stage, c)} />
                   </div>
                 </div>

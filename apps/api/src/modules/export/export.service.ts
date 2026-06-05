@@ -383,4 +383,93 @@ export class ExportService {
 
     return wb.xlsx.writeBuffer();
   }
+
+  // ─── Importação de leads via CSV ou XLSX ──────────────────────────────────────
+  async importLeads(companyId: string, userId: string, file: Express.Multer.File) {
+    const rows: Record<string, string>[] = [];
+    const ext = file.originalname.split('.').pop()?.toLowerCase();
+
+    if (ext === 'xlsx' || ext === 'xls') {
+      // Lê Excel
+      const wb = new ExcelJS.Workbook();
+      await wb.xlsx.load(file.buffer as any);
+      const ws = wb.worksheets[0];
+      const headers: string[] = [];
+      ws.eachRow((row, rowNumber) => {
+        if (rowNumber === 1) {
+          row.eachCell((cell) => headers.push(String(cell.value || '').trim()));
+        } else {
+          const obj: Record<string, string> = {};
+          row.eachCell((cell, colNumber) => {
+            obj[headers[colNumber - 1]] = String(cell.value || '').trim();
+          });
+          rows.push(obj);
+        }
+      });
+    } else {
+      // Lê CSV
+      const text = file.buffer.toString('utf-8').replace(/^﻿/, '');
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      const headers = lines[0].split(',').map(h => h.trim());
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',');
+        const obj: Record<string, string> = {};
+        headers.forEach((h, idx) => { obj[h] = (values[idx] || '').trim(); });
+        rows.push(obj);
+      }
+    }
+
+    // Mapeamento de colunas (suporta nomes em PT e EN)
+    const get = (row: Record<string, string>, ...keys: string[]) => {
+      for (const k of keys) {
+        const found = Object.keys(row).find(rk => rk.toLowerCase() === k.toLowerCase());
+        if (found && row[found]) return row[found];
+      }
+      return '';
+    };
+
+    const VALID_ORIGINS = ['WEBSITE','INSTAGRAM','FACEBOOK','GOOGLE','REFERRAL','PORTAL_IMOVEIS','WHATSAPP','PHONE','EMAIL','WALK_IN','OTHER'];
+    const VALID_STAGES  = ['INITIAL_CONTACT','REDIRECT','ATTENDANCE','TODAY','FOLLOW_UP','CLIENTS','INACTIVE'];
+
+    let created = 0, skipped = 0, errors: string[] = [];
+
+    for (const row of rows) {
+      const name  = get(row, 'Nome', 'Name', 'nome');
+      const phone = get(row, 'Telefone', 'Phone', 'telefone')?.replace(/\D/g, '');
+      if (!name || !phone) { skipped++; continue; }
+
+      const origin = VALID_ORIGINS.includes(get(row, 'Origem', 'Origin', 'origem'))
+        ? get(row, 'Origem', 'Origin', 'origem') as any
+        : 'OTHER';
+      const pipelineStage = VALID_STAGES.includes(get(row, 'Etapa', 'Stage', 'etapa'))
+        ? get(row, 'Etapa', 'Stage', 'etapa') as any
+        : 'INITIAL_CONTACT';
+
+      try {
+        // Evita duplicata por telefone
+        const existing = await this.prisma.lead.findFirst({ where: { companyId, phone } });
+        if (existing) { skipped++; continue; }
+
+        await this.prisma.lead.create({
+          data: {
+            companyId,
+            assignedUserId: userId,
+            name,
+            phone,
+            whatsapp: get(row, 'WhatsApp', 'whatsapp') || phone,
+            email:    get(row, 'Email', 'E-mail', 'email') || null,
+            city:     get(row, 'Cidade', 'City', 'cidade') || null,
+            interest: get(row, 'Interesse', 'Interest', 'interesse') || null,
+            origin,
+            pipelineStage,
+          },
+        });
+        created++;
+      } catch (e) {
+        errors.push(`${name}: ${(e as any).message}`);
+      }
+    }
+
+    return { created, skipped, errors: errors.slice(0, 10), total: rows.length };
+  }
 }

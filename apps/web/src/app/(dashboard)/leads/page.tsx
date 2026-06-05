@@ -1,7 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Search, Filter, Phone, MessageCircle, Mail, Eye, Trash2 } from 'lucide-react';
+import { Plus, Search, Phone, MessageCircle, Mail, Eye, Trash2, Upload, Download, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
@@ -13,6 +13,30 @@ export default function LeadsPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await api.post('/export/import-leads', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      const { created, skipped, errors } = res.data;
+      toast.success(`✅ ${created} leads importados, ${skipped} ignorados (duplicatas/sem dados)`);
+      if (errors?.length) toast.error(`Erros: ${errors.join(', ')}`);
+      qc.invalidateQueries({ queryKey: ['leads'] });
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Erro ao importar arquivo');
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   const { data, isLoading } = useQuery({
     queryKey: ['leads', search, statusFilter],
@@ -54,13 +78,40 @@ export default function LeadsPage() {
             ))}
           </select>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Novo Lead
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Input escondido para upload */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,.xlsx,.xls"
+            className="hidden"
+            onChange={handleImport}
+          />
+          <a
+            href={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '')}/api/v1/export/import-template`}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+            title="Baixar modelo CSV"
+          >
+            <Download className="w-4 h-4" />
+            Modelo
+          </a>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={importing}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-60"
+            title="Importar leads de CSV ou Excel"
+          >
+            {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+            Importar
+          </button>
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Novo Lead
+          </button>
+        </div>
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">

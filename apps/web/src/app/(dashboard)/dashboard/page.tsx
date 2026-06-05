@@ -63,6 +63,11 @@ export default function DashboardPage() {
     queryFn: () => api.get('/dashboard/conversion-by-stage').then((r) => r.data),
   });
 
+  const { data: pipelineStages } = useQuery<any[]>({
+    queryKey: ['leads-by-pipeline'],
+    queryFn: () => api.get('/dashboard/leads-by-pipeline').then((r) => r.data),
+  });
+
   const { data: brokers } = useQuery<any[]>({
     queryKey: ['broker-performance'],
     queryFn: () => api.get('/dashboard/broker-performance').then((r) => r.data),
@@ -128,14 +133,14 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800">
-          <h3 className="font-semibold text-slate-800 dark:text-white mb-4">Funil de Conversão</h3>
+          <h3 className="font-semibold text-slate-800 dark:text-white mb-4">Leads por Etapa do Funil</h3>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={(stages || []).map((s) => ({ ...s, name: stageLabels[s.stage] || s.stage }))}>
+            <BarChart data={pipelineStages || []} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
+              <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
+              <YAxis dataKey="label" type="category" tick={{ fontSize: 10 }} width={90} />
               <Tooltip />
-              <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="count" fill="#3b82f6" radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

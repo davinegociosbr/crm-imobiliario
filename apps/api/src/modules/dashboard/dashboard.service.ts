@@ -105,6 +105,21 @@ export class DashboardService {
     );
   }
 
+  async getLeadsByPipelineStage(companyId: string) {
+    const stages = ['INITIAL_CONTACT', 'REDIRECT', 'ATTENDANCE', 'TODAY', 'FOLLOW_UP', 'CLIENTS', 'INACTIVE'];
+    const labels: Record<string, string> = {
+      INITIAL_CONTACT: 'Contato Inicial', REDIRECT: 'Redirecionar', ATTENDANCE: 'Atendimento',
+      TODAY: 'Hoje', FOLLOW_UP: 'Follow-up', CLIENTS: 'Clientes', INACTIVE: 'Inativos',
+    };
+    return Promise.all(
+      stages.map(async (stage) => ({
+        stage,
+        label: labels[stage],
+        count: await this.prisma.lead.count({ where: { companyId, pipelineStage: stage as any } }),
+      })),
+    );
+  }
+
   async getBrokerPerformance(companyId: string) {
     const users = await this.prisma.user.findMany({
       where: { companyId, role: { in: ['BROKER', 'MANAGER'] } },

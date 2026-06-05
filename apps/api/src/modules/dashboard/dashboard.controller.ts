@@ -31,6 +31,11 @@ export class DashboardController {
     return this.dashboardService.getConversionByStage(user.companyId);
   }
 
+  @Get('leads-by-pipeline')
+  getLeadsByPipelineStage(@CurrentUser() user: any) {
+    return this.dashboardService.getLeadsByPipelineStage(user.companyId);
+  }
+
   @Get('broker-performance')
   getBrokerPerformance(@CurrentUser() user: any) {
     return this.dashboardService.getBrokerPerformance(user.companyId);
