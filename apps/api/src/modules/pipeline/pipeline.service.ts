@@ -31,6 +31,15 @@ export class PipelineService {
     return kanban;
   }
 
+  async removeFromPipeline(leadId: string, companyId: string) {
+    const lead = await this.prisma.lead.findFirst({ where: { id: leadId, companyId } });
+    if (!lead) return null;
+    return this.prisma.lead.update({
+      where: { id: leadId },
+      data: { status: 'LOST', lostReason: 'Removido do funil' },
+    });
+  }
+
   async moveCard(leadId: string, companyId: string, stage: any, userId: string) {
     const lead = await this.prisma.lead.findFirst({ where: { id: leadId, companyId } });
     if (!lead) return null;

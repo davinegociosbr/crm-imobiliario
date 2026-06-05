@@ -602,10 +602,10 @@ function LeadCard({ lead, index, onOpen }: { lead: any; index: number; onOpen: (
   });
 
   const removeFromPipeline = useMutation({
-    mutationFn: () => api.put(`/leads/${lead.id}`, { pipelineStage: null }),
+    mutationFn: () => api.delete(`/pipeline/${lead.id}/remove`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['pipeline-kanban'] });
-      toast.success('Lead removido do funil (contato mantido em Clientes/Leads)');
+      toast.success('Removido do funil — contato mantido em Clientes/Leads');
     },
     onError: () => toast.error('Erro ao remover do funil'),
   });
