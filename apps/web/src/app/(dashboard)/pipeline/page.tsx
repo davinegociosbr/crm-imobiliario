@@ -181,7 +181,7 @@ function NoteCard({ activity: a, leadId, onRefresh }: { activity: any; leadId: s
 // ─── Modal de detalhes do lead ────────────────────────────────────────────────
 function LeadDetailModal({ lead, onClose }: { lead: any; onClose: () => void }) {
   const qc = useQueryClient();
-  const [tab, setTab] = useState<'edit' | 'notes'>('edit');
+  const [tab, setTab] = useState<'edit' | 'notes' | 'history'>('edit');
 
   // Busca lead completo com atividades
   const { data: leadFull } = useQuery({
