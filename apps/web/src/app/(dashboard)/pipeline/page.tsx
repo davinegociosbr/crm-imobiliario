@@ -241,14 +241,24 @@ function LeadDetailModal({ lead, onClose }: { lead: any; onClose: () => void }) 
   });
 
   const addNote = useMutation({
-    mutationFn: (data: any) => api.post('/activities', {
-      leadId: lead.id,
-      type: 'NOTE',
-      description: data.note,
-      nextAction: data.nextAction || undefined,
-      nextContactAt: data.nextContactAt ? new Date(data.nextContactAt + 'T12:00:00').toISOString() : undefined,
-      notes: data.observations || undefined,
-    }),
+    mutationFn: async (data: any) => {
+      const hasDate = !!data.nextContactAt;
+      // Salva a nota/atividade
+      await api.post('/activities', {
+        leadId: lead.id,
+        type: 'NOTE',
+        description: data.note,
+        nextAction: data.nextAction || undefined,
+        nextContactAt: hasDate ? new Date(data.nextContactAt + 'T12:00:00').toISOString() : undefined,
+        notes: data.observations || undefined,
+      });
+      // Se o usuário definiu uma data → atualiza o lead com ela
+      // Se deixou vazia → limpa o nextContactAt do lead (envia null explicitamente)
+      await api.put(`/leads/${lead.id}`, {
+        nextContactAt: hasDate ? new Date(data.nextContactAt + 'T12:00:00').toISOString() : null,
+        ...(data.nextAction ? { nextAction: data.nextAction } : {}),
+      });
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['lead-detail', lead.id] });
       qc.invalidateQueries({ queryKey: ['pipeline-kanban'] });
