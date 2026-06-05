@@ -358,6 +358,14 @@ function LeadDetailModal({ lead, onClose }: { lead: any; onClose: () => void }) 
                     ))}
                   </select>
                 </div>
+                <div>
+                  <label className="field-label">Próxima Ação</label>
+                  <input {...register('nextAction')} className="field-input" placeholder="Ligar, enviar proposta..." />
+                </div>
+                <div>
+                  <label className="field-label">Data do Próximo Contato</label>
+                  <input {...register('nextContactAt')} type="date" className="field-input" />
+                </div>
               </div>
               <button
                 type="submit"
