@@ -4,6 +4,12 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
+import { useNotifications } from '@/hooks/use-notifications';
+
+function NotificationWatcher() {
+  useNotifications();
+  return null;
+}
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -17,6 +23,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
+      <NotificationWatcher />
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />

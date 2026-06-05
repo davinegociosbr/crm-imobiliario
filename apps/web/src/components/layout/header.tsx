@@ -10,6 +10,7 @@ import { api } from '@/lib/api';
 
 const titles: Record<string, string> = {
   '/dashboard': 'Dashboard',
+  '/agenda': 'Agenda',
   '/leads': 'Clientes & Leads',
   '/pipeline': 'Funil de Vendas',
   '/properties': 'Imóveis',

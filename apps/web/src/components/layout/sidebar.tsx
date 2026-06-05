@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, Kanban, Building2, Calendar,
   FileText, Key, TrendingUp, DollarSign, CheckSquare,
   BarChart3, Settings, LogOut, ChevronLeft, ChevronRight,
-  MessageCircle,
+  MessageCircle, CalendarDays,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth.store';
@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/agenda', label: 'Agenda', icon: CalendarDays },
   { href: '/leads', label: 'Clientes / Leads', icon: Users },
   { href: '/pipeline', label: 'Funil de Vendas', icon: Kanban },
   { href: '/properties', label: 'Imóveis', icon: Building2 },
