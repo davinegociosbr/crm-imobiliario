@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
-import { UserPlus, Download, FileJson, FileText, Loader2, Mail } from 'lucide-react';
+import { UserPlus, Download, FileJson, FileText, Loader2, Mail, Puzzle, Chrome, CheckCircle2, AlertCircle } from 'lucide-react';
 
 const ROLE_LABELS: Record<string, string> = { ADMIN: 'Administrador', MANAGER: 'Gerente', BROKER: 'Corretor' };
 const ROLE_COLORS: Record<string, string> = { ADMIN: 'bg-purple-100 text-purple-700', MANAGER: 'bg-blue-100 text-blue-700', BROKER: 'bg-green-100 text-green-700' };
@@ -45,6 +45,7 @@ export default function SettingsPage() {
           { id: 'company', label: 'Empresa' },
           { id: 'users', label: 'Usuários' },
           { id: 'backup', label: 'Backup' },
+          { id: 'extension', label: 'Extensão' },
           { id: 'audit', label: 'Auditoria' },
         ].map((t) => (
           <button key={t.id} onClick={() => setTab(t.id)} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === t.id ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}>{t.label}</button>
@@ -137,6 +138,8 @@ export default function SettingsPage() {
       )}
 
       {tab === 'backup' && <BackupTab />}
+
+      {tab === 'extension' && <ExtensionTab />}
 
       {tab === 'audit' && <AuditTab />}
     </div>
@@ -281,6 +284,98 @@ function BackupTab() {
           <li>Compatível com HubSpot, RD Station, Pipedrive e outros (salve a aba como CSV)</li>
           <li>Todos os campos já estão em português com formatação correta</li>
         </ul>
+      </div>
+    </div>
+  );
+}
+
+function ExtensionTab() {
+  const EXTENSION_ZIP_URL = 'https://github.com/davinegociosbr/crm-whatsapp-extension/archive/refs/heads/main.zip';
+
+  const steps = [
+    { n: 1, title: 'Baixe o arquivo ZIP', desc: 'Clique no botão abaixo para baixar a extensão mais recente.' },
+    { n: 2, title: 'Extraia o arquivo', desc: 'Clique com o botão direito no ZIP baixado e escolha "Extrair aqui" ou "Extrair tudo".' },
+    { n: 3, title: 'Abra as extensões do Chrome', desc: 'No Chrome, acesse chrome://extensions ou Menu → Mais ferramentas → Extensões.' },
+    { n: 4, title: 'Ative o Modo Desenvolvedor', desc: 'No canto superior direito da página de extensões, ative o toggle "Modo do desenvolvedor".' },
+    { n: 5, title: 'Carregue a extensão', desc: 'Clique em "Carregar sem compactação" e selecione a pasta extraída (crm-whatsapp-extension-main).' },
+    { n: 6, title: 'Faça login', desc: 'Clique no ícone da extensão na barra do Chrome, insira seu e-mail e senha do CRM.' },
+  ];
+
+  return (
+    <div className="max-w-2xl space-y-6">
+      {/* Card de download */}
+      <div className="bg-white dark:bg-slate-900 rounded-xl border p-6">
+        <div className="flex items-start gap-4 mb-6">
+          <div className="p-3 rounded-xl bg-green-100 dark:bg-green-950/30">
+            <Puzzle className="w-6 h-6 text-green-700" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-slate-800 dark:text-white">Extensão CRM Brolezi para Chrome</h2>
+            <p className="text-sm text-slate-500 mt-0.5">Adicione contatos do WhatsApp Web diretamente no CRM com um clique.</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-200 dark:border-blue-800 mb-6">
+          <Chrome className="w-5 h-5 text-blue-600 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-blue-800 dark:text-blue-300">Sempre atualizado</p>
+            <p className="text-xs text-blue-600 dark:text-blue-400">O arquivo baixado sempre contém a versão mais recente da extensão.</p>
+          </div>
+          <a
+            href={EXTENSION_ZIP_URL}
+            download="crm-brolezi-extensao.zip"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shrink-0"
+          >
+            <Download className="w-4 h-4" />
+            Baixar Extensão
+          </a>
+        </div>
+
+        {/* Passo a passo */}
+        <h3 className="font-medium text-slate-700 dark:text-slate-300 mb-4 text-sm">Como instalar</h3>
+        <div className="space-y-3">
+          {steps.map((s) => (
+            <div key={s.n} className="flex gap-3">
+              <div className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                {s.n}
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{s.title}</p>
+                <p className="text-xs text-slate-500 mt-0.5">{s.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Funcionalidades */}
+      <div className="bg-white dark:bg-slate-900 rounded-xl border p-6">
+        <h3 className="font-medium text-slate-700 dark:text-slate-300 mb-4 text-sm">O que a extensão faz</h3>
+        <div className="space-y-2">
+          {[
+            'Detecta automaticamente o contato aberto no WhatsApp Web',
+            'Verifica se o contato já existe no CRM',
+            'Permite adicionar novos leads diretamente do WhatsApp',
+            'Abre o WhatsApp sempre na mesma aba (sem abrir janelas extras)',
+            'Mostra link direto para o perfil do cliente no CRM',
+          ].map((f) => (
+            <div key={f} className="flex items-start gap-2">
+              <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
+              <p className="text-sm text-slate-600 dark:text-slate-400">{f}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Aviso atualização */}
+      <div className="flex gap-3 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+        <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-medium text-amber-800 dark:text-amber-400">Como atualizar a extensão</p>
+          <p className="text-xs text-amber-700 dark:text-amber-500 mt-1">
+            Quando houver uma nova versão, baixe o ZIP novamente, extraia na mesma pasta (substituindo os arquivos) e clique no ícone 🔄 na página de extensões do Chrome.
+          </p>
+        </div>
       </div>
     </div>
   );
