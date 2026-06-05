@@ -21,9 +21,12 @@ export class DashboardService {
       commissions,
       tasks,
     ] = await Promise.all([
-      this.prisma.lead.count({ where: { companyId } }),
-      this.prisma.lead.count({ where: { companyId, status: 'NEW', createdAt: { gte: start, lte: end } } }),
-      this.prisma.lead.count({ where: { companyId, status: 'IN_PROGRESS' } }),
+      // Total de leads ativos (exclui LOST/WON para não contar cards removidos do funil)
+      this.prisma.lead.count({ where: { companyId, status: { notIn: ['WON', 'LOST'] } } }),
+      // Leads criados no período (qualquer status, exceto LOST)
+      this.prisma.lead.count({ where: { companyId, status: { notIn: ['LOST'] }, createdAt: { gte: start, lte: end } } }),
+      // Leads ativos no funil (não encerrados)
+      this.prisma.lead.count({ where: { companyId, status: { notIn: ['WON', 'LOST'] } } }),
       this.prisma.visit.count({
         where: { lead: { companyId }, status: 'SCHEDULED', scheduledAt: { gte: start, lte: end } },
       }),
@@ -88,11 +91,20 @@ export class DashboardService {
   async getLeadsByOrigin(companyId: string) {
     const result = await this.prisma.lead.groupBy({
       by: ['origin'],
-      where: { companyId },
+      where: { companyId, status: { notIn: ['LOST'] } },
       _count: { id: true },
     });
 
-    return result.map((r) => ({ origin: r.origin, count: r._count.id }));
+    const originLabels: Record<string, string> = {
+      WHATSAPP: 'WhatsApp', INSTAGRAM: 'Instagram', FACEBOOK: 'Facebook',
+      REFERRAL: 'Indicação', PORTAL_IMOVEIS: 'Portal Imóveis', WEBSITE: 'Site',
+      COLD_CALL: 'Ligação', EMAIL: 'E-mail', OTHER: 'Outros',
+    };
+
+    return result.map((r) => ({
+      origin: originLabels[r.origin] || r.origin,
+      count: r._count.id,
+    }));
   }
 
   async getConversionByStage(companyId: string) {
@@ -146,7 +158,8 @@ export class DashboardService {
       stages.map(async (stage) => ({
         stage,
         label: labels[stage],
-        count: await this.prisma.lead.count({ where: { companyId, pipelineStage: stage as any } }),
+        // Exclui leads LOST/WON para mostrar apenas quem está ativo no funil
+        count: await this.prisma.lead.count({ where: { companyId, pipelineStage: stage as any, status: { notIn: ['WON', 'LOST'] } } }),
       })),
     );
   }

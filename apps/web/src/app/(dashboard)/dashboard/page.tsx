@@ -83,10 +83,10 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard title="Total de Leads" value={metrics?.totalLeads || 0} icon={Users} color="bg-blue-600" sub="Todos os leads cadastrados" />
-        <MetricCard title="Leads Novos" value={metrics?.newLeads || 0} icon={ArrowUpRight} color="bg-indigo-500" sub="Este mês" />
-        <MetricCard title="Em Atendimento" value={metrics?.inProgressLeads || 0} icon={Clock} color="bg-amber-500" sub="Leads ativos" />
-        <MetricCard title="Taxa de Conversão" value={`${metrics?.conversionRate || 0}%`} icon={Percent} color="bg-purple-600" />
+        <MetricCard title="Total de Leads" value={metrics?.totalLeads || 0} icon={Users} color="bg-blue-600" sub="Leads ativos (excl. perdidos)" />
+        <MetricCard title="Leads Novos" value={metrics?.newLeads || 0} icon={ArrowUpRight} color="bg-indigo-500" sub="Criados este mês" />
+        <MetricCard title="No Funil" value={metrics?.inProgressLeads || 0} icon={Clock} color="bg-amber-500" sub="Negociações em andamento" />
+        <MetricCard title="Taxa de Conversão" value={`${metrics?.conversionRate || 0}%`} icon={Percent} color="bg-purple-600" sub="Vendas / Total leads" />
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
