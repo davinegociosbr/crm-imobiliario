@@ -5,7 +5,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import {
   ArrowLeft, Phone, MessageCircle, Mail, Edit2, Loader2,
-  CheckCircle2, Circle, Trash2, Plus, Flag,
+  CheckCircle2, Circle, Trash2, Plus, Flag, Calendar, Home,
+  FileText, DollarSign, StickyNote, GitBranch,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
@@ -15,7 +16,7 @@ import {
 } from '@/lib/utils';
 import { LeadModal } from '@/components/leads/lead-modal';
 
-const TABS = ['Dados', 'Notas', 'Visitas', 'Propostas', 'Tarefas'] as const;
+const TABS = ['Dados', 'Timeline', 'Notas', 'Visitas', 'Propostas', 'Tarefas'] as const;
 type Tab = typeof TABS[number];
 
 export default function LeadDetailPage() {
@@ -34,8 +35,42 @@ export default function LeadDetailPage() {
   const { data: activities = [], isLoading: loadingActivities } = useQuery({
     queryKey: ['activities', id],
     queryFn: () => api.get(`/activities/lead/${id}`).then((r) => r.data),
-    enabled: activeTab === 'Notas',
+    enabled: activeTab === 'Notas' || activeTab === 'Timeline',
   });
+
+  // Timeline: junta notas, visitas e propostas ordenadas por data
+  const timelineEvents = (() => {
+    if (!lead) return [];
+    const events: any[] = [];
+
+    // Criação do lead
+    events.push({ type: 'created', date: lead.createdAt, label: 'Lead cadastrado', icon: 'created', color: 'blue' });
+
+    // Atividades/notas
+    activities.forEach((a: any) => {
+      const label = a.type === 'NOTE' ? 'Nota registrada'
+        : a.type === 'CALL' ? 'Ligação realizada'
+        : a.type === 'EMAIL' ? 'E-mail enviado'
+        : a.type === 'VISIT' ? 'Visita realizada'
+        : a.type === 'MEETING' ? 'Reunião realizada'
+        : a.description?.startsWith('Movido') ? a.description
+        : a.type;
+      const isFunnelMove = a.description?.startsWith('Movido');
+      events.push({ type: 'activity', date: a.createdAt, label, description: isFunnelMove ? '' : a.description, icon: isFunnelMove ? 'funnel' : 'note', color: isFunnelMove ? 'purple' : 'slate', completed: a.isCompleted });
+    });
+
+    // Visitas
+    (lead.visits || []).forEach((v: any) => {
+      events.push({ type: 'visit', date: v.scheduledAt, label: `Visita agendada — ${v.property?.name || 'imóvel'}`, description: `Status: ${v.status}`, icon: 'visit', color: 'green' });
+    });
+
+    // Propostas
+    (lead.proposals || []).forEach((p: any) => {
+      events.push({ type: 'proposal', date: p.createdAt, label: `Proposta enviada — ${p.property?.name || 'imóvel'}`, description: `Valor: ${p.propertyValue ? `R$ ${Number(p.propertyValue).toLocaleString('pt-BR')}` : '-'} · Status: ${p.status}`, icon: 'proposal', color: 'amber' });
+    });
+
+    return events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  })();
 
   const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm({
     defaultValues: { type: 'NOTE', description: '', nextAction: '', nextContactAt: '', notes: '' },
@@ -159,6 +194,59 @@ export default function LeadDetailPage() {
               {lead.assignedUser && <Row label="Corretor" value={lead.assignedUser.name} />}
               <Row label="Cadastro" value={formatDate(lead.createdAt)} />
             </dl>
+          </div>
+        </div>
+      )}
+
+      {/* Aba: Timeline */}
+      {activeTab === 'Timeline' && (
+        <div className="relative">
+          {timelineEvents.length === 0 && (
+            <p className="text-center py-12 text-slate-400 text-sm">Nenhum evento registrado ainda.</p>
+          )}
+          <div className="space-y-0">
+            {timelineEvents.map((event, index) => {
+              const iconMap: Record<string, any> = {
+                created: { icon: Plus, bg: 'bg-blue-100 dark:bg-blue-950/40', text: 'text-blue-600' },
+                note: { icon: StickyNote, bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-500' },
+                funnel: { icon: GitBranch, bg: 'bg-purple-100 dark:bg-purple-950/40', text: 'text-purple-600' },
+                visit: { icon: Home, bg: 'bg-green-100 dark:bg-green-950/40', text: 'text-green-600' },
+                proposal: { icon: FileText, bg: 'bg-amber-100 dark:bg-amber-950/40', text: 'text-amber-600' },
+              };
+              const iconInfo = iconMap[event.icon] || iconMap.note;
+              const IconComp = iconInfo.icon;
+              const isLast = index === timelineEvents.length - 1;
+
+              return (
+                <div key={index} className="flex gap-4">
+                  {/* Linha vertical + ícone */}
+                  <div className="flex flex-col items-center">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 ${iconInfo.bg}`}>
+                      <IconComp className={`w-3.5 h-3.5 ${iconInfo.text}`} />
+                    </div>
+                    {!isLast && <div className="w-0.5 flex-1 bg-slate-200 dark:bg-slate-700 my-1" />}
+                  </div>
+
+                  {/* Conteúdo */}
+                  <div className={`flex-1 pb-5 ${isLast ? '' : ''}`}>
+                    <div className="bg-white dark:bg-slate-900 rounded-xl border p-3.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-sm font-medium text-slate-800 dark:text-white">{event.label}</p>
+                        {event.completed && (
+                          <span className="text-xs px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 shrink-0">✓ Concluído</span>
+                        )}
+                      </div>
+                      {event.description && (
+                        <p className="text-xs text-slate-500 mt-1 leading-relaxed">{event.description}</p>
+                      )}
+                      <p className="text-xs text-slate-400 mt-2">
+                        {new Date(event.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
