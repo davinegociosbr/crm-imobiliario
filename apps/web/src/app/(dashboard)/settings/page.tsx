@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
-import { UserPlus, Download, FileJson, FileText, Loader2 } from 'lucide-react';
+import { UserPlus, Download, FileJson, FileText, Loader2, Mail } from 'lucide-react';
 
 const ROLE_LABELS: Record<string, string> = { ADMIN: 'Administrador', MANAGER: 'Gerente', BROKER: 'Corretor' };
 const ROLE_COLORS: Record<string, string> = { ADMIN: 'bg-purple-100 text-purple-700', MANAGER: 'bg-blue-100 text-blue-700', BROKER: 'bg-green-100 text-green-700' };
@@ -146,6 +146,7 @@ export default function SettingsPage() {
 function BackupTab() {
   const [loadingXlsx, setLoadingXlsx] = useState(false);
   const [loadingJson, setLoadingJson] = useState(false);
+  const [loadingEmail, setLoadingEmail] = useState(false);
 
   const download = async (endpoint: string, filename: string, setLoading: (v: boolean) => void) => {
     setLoading(true);
@@ -167,6 +168,18 @@ function BackupTab() {
       toast.error('Erro ao gerar o arquivo de backup');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const sendEmailBackup = async () => {
+    setLoadingEmail(true);
+    try {
+      await api.post('/backup/send-now');
+      toast.success('✅ Backup enviado para o e-mail configurado!');
+    } catch {
+      toast.error('❌ Erro ao enviar backup por e-mail. Verifique se o e-mail está configurado no servidor.');
+    } finally {
+      setLoadingEmail(false);
     }
   };
 
@@ -228,6 +241,36 @@ function BackupTab() {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Backup automático por e-mail */}
+      <div className="bg-white dark:bg-slate-900 rounded-xl border p-6">
+        <h2 className="font-semibold text-slate-800 dark:text-white mb-1">Backup Automático por E-mail</h2>
+        <p className="text-sm text-slate-500 mb-4">
+          Todo dia às <strong>04:00 (horário de Brasília)</strong> um backup completo em Excel é enviado automaticamente para <strong>davi.negociosbr@gmail.com</strong>.
+        </p>
+        <div className="flex items-start gap-4 p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+          <div className="p-3 rounded-lg bg-indigo-100 dark:bg-indigo-950/30 shrink-0">
+            <Mail className="w-5 h-5 text-indigo-600" />
+          </div>
+          <div className="flex-1">
+            <p className="font-medium text-slate-800 dark:text-white text-sm">Enviar Backup Agora por E-mail</p>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Dispara o backup imediatamente sem esperar o horário agendado. Útil para testar ou guardar uma cópia extra.
+            </p>
+          </div>
+          <button
+            onClick={sendEmailBackup}
+            disabled={loadingEmail}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium disabled:opacity-60 shrink-0"
+          >
+            {loadingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+            {loadingEmail ? 'Enviando...' : 'Enviar agora'}
+          </button>
+        </div>
+        <p className="text-xs text-slate-400 mt-3">
+          ⚙️ Configurado automaticamente. O backup diário roda todos os dias sem nenhuma ação necessária.
+        </p>
       </div>
 
       <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
