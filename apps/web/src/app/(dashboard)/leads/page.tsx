@@ -21,17 +21,30 @@ const PIPELINE_STAGE_OPTIONS = [
 function AddToPipelineModal({ lead, onClose }: { lead: any; onClose: () => void }) {
   const qc = useQueryClient();
   const [stage, setStage] = useState('INITIAL_CONTACT');
+  const [interest, setInterest] = useState(lead.interest || '');
   const [loading, setLoading] = useState(false);
 
   const handleAdd = async () => {
     setLoading(true);
     try {
-      await api.put(`/leads/${lead.id}`, { pipelineStage: stage, status: 'IN_PROGRESS' });
+      // Cria um NOVO lead (card) baseado no contato existente — permite múltiplos cards
+      await api.post('/leads', {
+        name: lead.name,
+        phone: lead.phone,
+        whatsapp: lead.whatsapp,
+        email: lead.email,
+        city: lead.city,
+        state: lead.state,
+        origin: lead.origin,
+        interest: interest || lead.interest,
+        pipelineStage: stage,
+        status: 'IN_PROGRESS',
+      });
       qc.invalidateQueries({ queryKey: ['leads'] });
-      toast.success(`${lead.name} adicionado ao funil!`);
+      toast.success(`Novo card criado para ${lead.name} no funil!`);
       onClose();
     } catch {
-      toast.error('Erro ao adicionar ao funil');
+      toast.error('Erro ao criar card no funil');
     } finally {
       setLoading(false);
     }
@@ -39,28 +52,48 @@ function AddToPipelineModal({ lead, onClose }: { lead: any; onClose: () => void 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-6 w-80" onClick={e => e.stopPropagation()}>
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-6 w-96" onClick={e => e.stopPropagation()}>
         <h3 className="font-bold text-slate-800 dark:text-white mb-1">Adicionar ao Funil</h3>
         <p className="text-sm text-slate-500 mb-4">{lead.name}</p>
-        <label className="block text-xs font-medium text-slate-500 mb-1.5">Escolha a etapa</label>
-        <select
-          value={stage}
-          onChange={e => setStage(e.target.value)}
-          className="w-full px-3 py-2 border rounded-lg text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:text-white"
-        >
-          {PIPELINE_STAGE_OPTIONS.map(s => (
-            <option key={s.value} value={s.value}>{s.label}</option>
-          ))}
-        </select>
+
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1.5">Interesse / Negócio</label>
+            <input
+              value={interest}
+              onChange={e => setInterest(e.target.value)}
+              placeholder="Ex: Apartamento 3 dorms, Residencial Norte..."
+              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1.5">Etapa do Funil</label>
+            <select
+              value={stage}
+              onChange={e => setStage(e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+            >
+              {PIPELINE_STAGE_OPTIONS.map(s => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <p className="text-xs text-slate-400 mt-3 mb-4">
+          💡 Um novo card será criado no funil. O contato pode ter múltiplas negociações simultâneas.
+        </p>
+
         <div className="flex gap-2">
-          <button onClick={onClose} className="flex-1 py-2 border rounded-lg text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
+          <button onClick={onClose} className="flex-1 py-2 border rounded-lg text-sm text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800">Cancelar</button>
           <button
             onClick={handleAdd}
             disabled={loading}
             className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-1.5 disabled:opacity-60"
           >
             {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Kanban className="w-3.5 h-3.5" />}
-            Adicionar
+            Criar Card
           </button>
         </div>
       </div>
