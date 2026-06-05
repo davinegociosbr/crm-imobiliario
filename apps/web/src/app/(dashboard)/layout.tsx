@@ -12,12 +12,19 @@ function NotificationWatcher() {
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, _hasHydrated } = useAuthStore();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isAuthenticated) router.replace('/login');
-  }, [isAuthenticated, router]);
+    if (_hasHydrated && !isAuthenticated) router.replace('/login');
+  }, [isAuthenticated, _hasHydrated, router]);
+
+  // Aguarda o Zustand reidratrar o localStorage antes de decidir se redireciona
+  if (!_hasHydrated) return (
+    <div className="flex h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
+      <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
 
   if (!isAuthenticated) return null;
 
