@@ -52,7 +52,26 @@ export default function LeadsPage() {
     },
   });
 
-  const leads = data?.data || [];
+  const allLeads: any[] = data?.data || [];
+
+  // Deduplica por telefone: para cada número, mantém o lead mais recente
+  const leads = (() => {
+    const seen = new Map<string, any>();
+    for (const lead of allLeads) {
+      const key = (lead.phone || lead.whatsapp || lead.email || lead.id)
+        .replace(/\D/g, '') || lead.id;
+      if (!seen.has(key)) {
+        seen.set(key, lead);
+      } else {
+        // Mantém o mais recente
+        const existing = seen.get(key)!;
+        if (new Date(lead.createdAt) > new Date(existing.createdAt)) {
+          seen.set(key, lead);
+        }
+      }
+    }
+    return Array.from(seen.values());
+  })();
 
   return (
     <div className="space-y-4">
