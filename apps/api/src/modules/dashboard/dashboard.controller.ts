@@ -31,6 +31,11 @@ export class DashboardController {
     return this.dashboardService.getConversionByStage(user.companyId);
   }
 
+  @Get('reminders')
+  getReminders(@CurrentUser() user: any) {
+    return this.dashboardService.getReminders(user.companyId);
+  }
+
   @Get('leads-by-pipeline')
   getLeadsByPipelineStage(@CurrentUser() user: any) {
     return this.dashboardService.getLeadsByPipelineStage(user.companyId);

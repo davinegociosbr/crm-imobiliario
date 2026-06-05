@@ -105,6 +105,37 @@ export class DashboardService {
     );
   }
 
+  async getReminders(companyId: string) {
+    const now = new Date();
+    const endOfTomorrow = new Date(now);
+    endOfTomorrow.setDate(endOfTomorrow.getDate() + 1);
+    endOfTomorrow.setHours(23, 59, 59, 999);
+
+    const leads = await this.prisma.lead.findMany({
+      where: {
+        companyId,
+        nextContactAt: { lte: endOfTomorrow },
+        status: { notIn: ['WON', 'LOST'] },
+      },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        nextContactAt: true,
+        pipelineStage: true,
+        nextAction: true,
+      },
+      orderBy: { nextContactAt: 'asc' },
+      take: 20,
+    });
+
+    return leads.map(l => ({
+      ...l,
+      overdue: l.nextContactAt! < now,
+      today: l.nextContactAt!.toDateString() === now.toDateString(),
+    }));
+  }
+
   async getLeadsByPipelineStage(companyId: string) {
     const stages = ['INITIAL_CONTACT', 'REDIRECT', 'ATTENDANCE', 'TODAY', 'FOLLOW_UP', 'CLIENTS', 'INACTIVE'];
     const labels: Record<string, string> = {
