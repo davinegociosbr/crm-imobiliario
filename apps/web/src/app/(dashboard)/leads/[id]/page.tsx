@@ -99,7 +99,7 @@ export default function LeadDetailPage() {
             <Phone className="w-4 h-4" />
           </a>
           {lead.whatsapp && (
-            <a href={`https://wa.me/55${lead.whatsapp.replace(/\D/g, '')}`} target="_blank" className="p-2 rounded-lg hover:bg-green-50 text-green-600 border border-green-200" title="WhatsApp">
+            <a href={`https://web.whatsapp.com/send?phone=55${lead.whatsapp.replace(/\D/g, '')}`} target="whatsapp_web" className="p-2 rounded-lg hover:bg-green-50 text-green-600 border border-green-200" title="WhatsApp">
               <MessageCircle className="w-4 h-4" />
             </a>
           )}

@@ -633,8 +633,8 @@ function LeadCard({ lead, index, onOpen }: { lead: any; index: number; onOpen: (
             </a>
             {lead.whatsapp && (
               <a
-                href={`https://wa.me/55${lead.whatsapp?.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá ${lead.name.split(' ')[0]}, tudo bem? Passando para dar um retorno sobre o atendimento. Podemos conversar?`)}`}
-                target="_blank"
+                href={`https://web.whatsapp.com/send?phone=55${lead.whatsapp?.replace(/\D/g, '')}&text=${encodeURIComponent(`Olá ${lead.name.split(' ')[0]}, tudo bem? Passando para dar um retorno sobre o atendimento. Podemos conversar?`)}`}
+                target="whatsapp_web"
                 onClick={e => e.stopPropagation()}
                 className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-green-50 text-green-600 hover:bg-green-100 text-[10px] font-medium"
               >

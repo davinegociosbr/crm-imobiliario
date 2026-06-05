@@ -237,8 +237,8 @@ export default function AgendaPage() {
                     </a>
                     {lead.whatsapp && (
                       <a
-                        href={`https://wa.me/55${lead.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá ${lead.name.split(' ')[0]}, tudo bem? Passando para dar um retorno sobre o atendimento. Podemos conversar?`)}`}
-                        target="_blank"
+                        href={`https://web.whatsapp.com/send?phone=55${lead.whatsapp.replace(/\D/g, '')}&text=${encodeURIComponent(`Olá ${lead.name.split(' ')[0]}, tudo bem? Passando para dar um retorno sobre o atendimento. Podemos conversar?`)}`}
+                        target="whatsapp_web"
                         className="flex items-center gap-1 px-2 py-1 rounded-lg bg-green-100 dark:bg-green-950/40 text-green-600 text-xs font-medium hover:bg-green-200"
                       >
                         <MessageCircle className="w-3 h-3" /> WhatsApp
