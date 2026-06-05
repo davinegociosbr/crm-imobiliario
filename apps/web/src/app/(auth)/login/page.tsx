@@ -84,16 +84,6 @@ export default function LoginPage() {
         </button>
       </form>
 
-      <div className="mt-4 text-center text-sm text-slate-500">
-        Demo: <span className="font-mono text-blue-600">admin@demo.com / admin123</span>
-      </div>
-
-      <div className="mt-6 text-center text-sm text-slate-500">
-        Não tem conta?{' '}
-        <Link href="/register" className="text-blue-600 hover:underline font-medium">
-          Criar conta grátis
-        </Link>
-      </div>
     </div>
   );
 }
