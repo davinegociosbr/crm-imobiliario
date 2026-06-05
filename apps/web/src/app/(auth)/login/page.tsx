@@ -6,7 +6,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { Loader2, Building2, Eye, EyeOff } from 'lucide-react';
+import Image from 'next/image';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 
 const schema = z.object({
@@ -36,14 +37,16 @@ export default function LoginPage() {
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-8">
-      <div className="flex items-center gap-3 mb-8">
-        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-          <Building2 className="w-6 h-6 text-white" />
-        </div>
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-white">CRM Imobiliário</h1>
-          <p className="text-sm text-slate-500">Acesse sua conta</p>
-        </div>
+      <div className="flex flex-col items-center mb-8">
+        <Image
+          src="/logo-brolezi.png"
+          alt="Brolezi Negócios Imobiliários"
+          width={160}
+          height={160}
+          className="rounded-2xl mb-4"
+          priority
+        />
+        <p className="text-sm text-slate-500">Acesse sua conta</p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

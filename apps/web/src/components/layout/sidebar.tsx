@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Users, Kanban, Building2, Calendar,
@@ -45,12 +46,18 @@ export function Sidebar() {
       collapsed ? 'w-16' : 'w-64',
     )}>
       <div className="flex items-center gap-3 p-4 border-b border-sidebar-border">
-        <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center shrink-0">
-          <Building2 className="w-5 h-5 text-white" />
+        <div className="shrink-0">
+          <Image
+            src="/logo-brolezi.png"
+            alt="Brolezi"
+            width={collapsed ? 32 : 36}
+            height={collapsed ? 32 : 36}
+            className="rounded-lg"
+          />
         </div>
         {!collapsed && (
           <div className="overflow-hidden">
-            <p className="font-semibold text-sm truncate">{user?.company?.name || 'CRM'}</p>
+            <p className="font-semibold text-sm truncate">{user?.company?.name || 'Brolezi'}</p>
             <p className="text-xs text-sidebar-foreground/60 truncate">{user?.name}</p>
           </div>
         )}
