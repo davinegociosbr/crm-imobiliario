@@ -1,12 +1,72 @@
 'use client';
 import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Search, Phone, MessageCircle, Mail, Eye, Trash2, Upload, Download, Loader2 } from 'lucide-react';
+import { Plus, Search, Phone, MessageCircle, Mail, Eye, Trash2, Upload, Download, Loader2, Kanban } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { formatDate, LEAD_STATUS, LEAD_ORIGINS, formatCurrency } from '@/lib/utils';
 import { LeadModal } from '@/components/leads/lead-modal';
+
+const PIPELINE_STAGE_OPTIONS = [
+  { value: 'INITIAL_CONTACT', label: 'Contato Inicial' },
+  { value: 'REDIRECT',        label: 'Redirecionar' },
+  { value: 'ATTENDANCE',      label: 'Atendimento' },
+  { value: 'TODAY',           label: 'Hoje' },
+  { value: 'FOLLOW_UP',       label: 'Follow-up' },
+  { value: 'CLIENTS',         label: 'Clientes' },
+  { value: 'INACTIVE',        label: 'Inativos' },
+];
+
+function AddToPipelineModal({ lead, onClose }: { lead: any; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [stage, setStage] = useState('INITIAL_CONTACT');
+  const [loading, setLoading] = useState(false);
+
+  const handleAdd = async () => {
+    setLoading(true);
+    try {
+      await api.put(`/leads/${lead.id}`, { pipelineStage: stage, status: 'IN_PROGRESS' });
+      qc.invalidateQueries({ queryKey: ['leads'] });
+      toast.success(`${lead.name} adicionado ao funil!`);
+      onClose();
+    } catch {
+      toast.error('Erro ao adicionar ao funil');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-6 w-80" onClick={e => e.stopPropagation()}>
+        <h3 className="font-bold text-slate-800 dark:text-white mb-1">Adicionar ao Funil</h3>
+        <p className="text-sm text-slate-500 mb-4">{lead.name}</p>
+        <label className="block text-xs font-medium text-slate-500 mb-1.5">Escolha a etapa</label>
+        <select
+          value={stage}
+          onChange={e => setStage(e.target.value)}
+          className="w-full px-3 py-2 border rounded-lg text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+        >
+          {PIPELINE_STAGE_OPTIONS.map(s => (
+            <option key={s.value} value={s.value}>{s.label}</option>
+          ))}
+        </select>
+        <div className="flex gap-2">
+          <button onClick={onClose} className="flex-1 py-2 border rounded-lg text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
+          <button
+            onClick={handleAdd}
+            disabled={loading}
+            className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-1.5 disabled:opacity-60"
+          >
+            {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Kanban className="w-3.5 h-3.5" />}
+            Adicionar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function LeadsPage() {
   const qc = useQueryClient();
@@ -14,6 +74,7 @@ export default function LeadsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [addToPipelineLead, setAddToPipelineLead] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -201,6 +262,13 @@ export default function LeadsPage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => setAddToPipelineLead(lead)}
+                          className="p-1.5 rounded hover:bg-purple-50 text-purple-600"
+                          title="Adicionar ao Funil"
+                        >
+                          <Kanban className="w-4 h-4" />
+                        </button>
                         <Link href={`/leads/${lead.id}`} className="p-1.5 rounded hover:bg-blue-50 text-blue-600">
                           <Eye className="w-4 h-4" />
                         </Link>
@@ -221,6 +289,7 @@ export default function LeadsPage() {
       </div>
 
       {showModal && <LeadModal onClose={() => setShowModal(false)} />}
+      {addToPipelineLead && <AddToPipelineModal lead={addToPipelineLead} onClose={() => setAddToPipelineLead(null)} />}
     </div>
   );
 }
