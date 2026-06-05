@@ -203,9 +203,15 @@ function LeadDetailModal({ lead, onClose }: { lead: any; onClose: () => void }) 
         'notes', 'origin', 'status', 'pipelineStage', 'nextAction', 'nextContactAt',
         'lostReason', 'potentialValue', 'assignedUserId'];
       const clean: any = {};
+      // Campos de data que devem virar null quando apagados
+      const dateFields = ['nextContactAt', 'birthDate'];
       allowed.forEach(k => {
         const v = data[k];
-        if (v !== '' && v !== null && v !== undefined) clean[k] = v;
+        if (dateFields.includes(k)) {
+          clean[k] = (v === '' || v === null || v === undefined) ? null : v;
+        } else if (v !== '' && v !== null && v !== undefined) {
+          clean[k] = v;
+        }
       });
       if (clean.nextContactAt) clean.nextContactAt = new Date(clean.nextContactAt + 'T12:00:00').toISOString();
       return api.put(`/leads/${lead.id}`, clean);
