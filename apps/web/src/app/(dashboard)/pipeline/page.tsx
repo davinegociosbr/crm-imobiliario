@@ -571,84 +571,63 @@ function LeadCard({ lead, index, onOpen }: { lead: any; index: number; onOpen: (
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          className={`bg-white dark:bg-slate-800 rounded-xl p-4 border shadow-sm cursor-grab active:cursor-grabbing transition-shadow ${
+          className={`bg-white dark:bg-slate-800 rounded-lg p-2.5 border shadow-sm cursor-grab active:cursor-grabbing transition-shadow ${
             snapshot.isDragging
               ? 'shadow-lg ring-2 ring-blue-500'
               : 'border-slate-200 dark:border-slate-700 hover:shadow-md'
           }`}
           onClick={() => !snapshot.isDragging && onOpen(lead)}
         >
-          {/* Nome do Cliente */}
-          <p className="font-semibold text-slate-900 dark:text-white text-sm leading-tight">
-            {lead.name}
-          </p>
-
-          {/* Nome do Negócio / Interesse */}
-          <div className="flex items-center gap-1.5 mt-1.5 mb-3">
-            <Briefcase className="w-3 h-3 text-blue-500 shrink-0" />
-            {lead.interest
-              ? <p className="text-xs text-blue-600 dark:text-blue-400 font-medium line-clamp-1">{lead.interest}</p>
-              : <p className="text-xs text-slate-400 italic">Sem empreendimento</p>
-            }
-          </div>
-
-          <div className="space-y-2">
-            {/* Telefone */}
-            <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
-              <Phone className="w-3 h-3 text-slate-400 shrink-0" />
-              <span>{lead.phone}</span>
-            </div>
-
-            {/* Próximo Contato */}
-            <div className={`flex items-center gap-1.5 text-xs font-medium rounded-lg px-2 py-1 ${
+          {/* Linha 1: Nome + data */}
+          <div className="flex items-start justify-between gap-1 mb-1">
+            <p className="font-semibold text-slate-900 dark:text-white text-xs leading-tight line-clamp-1 flex-1">
+              {lead.name}
+            </p>
+            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded shrink-0 ${
               !nextContact
                 ? 'bg-slate-100 text-slate-400 dark:bg-slate-700'
                 : isOverdue
                 ? 'bg-red-50 text-red-600 dark:bg-red-950/30'
                 : 'bg-green-50 text-green-700 dark:bg-green-950/30'
             }`}>
-              <Calendar className="w-3 h-3 shrink-0" />
-              <span>
-                {nextContact
-                  ? nextContact.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })
-                  : 'Sem data'}
-              </span>
-            </div>
+              {nextContact
+                ? nextContact.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })
+                : 'Sem data'}
+            </span>
           </div>
 
-          {/* Ações + Prioridade */}
-          <div className="flex gap-1.5 mt-3 pt-3 border-t border-slate-100 dark:border-slate-700 flex-wrap">
+          {/* Linha 2: Interesse */}
+          {lead.interest && (
+            <p className="text-[11px] text-blue-500 dark:text-blue-400 line-clamp-1 mb-1">{lead.interest}</p>
+          )}
+
+          {/* Linha 3: Ações */}
+          <div className="flex items-center gap-1 pt-1.5 border-t border-slate-100 dark:border-slate-700">
             <a
               href={`tel:${lead.phone}`}
               onClick={e => e.stopPropagation()}
-              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs font-medium"
+              className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 text-[10px] font-medium"
             >
-              <Phone className="w-3 h-3" />
-              Ligar
+              <Phone className="w-2.5 h-2.5" /> Ligar
             </a>
             {lead.whatsapp && (
               <a
                 href={`https://wa.me/55${lead.whatsapp?.replace(/\D/g, '')}`}
                 target="_blank"
                 onClick={e => e.stopPropagation()}
-                className="flex items-center gap-1 px-2 py-1 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 text-xs font-medium"
+                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-green-50 text-green-600 hover:bg-green-100 text-[10px] font-medium"
               >
-                <MessageCircle className="w-3 h-3" />
-                WA
+                <MessageCircle className="w-2.5 h-2.5" /> WA
               </a>
             )}
-
-            {/* Botões de Prioridade */}
-            <div className="flex gap-1 ml-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex gap-0.5 ml-auto" onClick={e => e.stopPropagation()}>
               {PRIORITY_OPTIONS.map(p => (
                 <button
                   key={p.value}
                   title={p.label}
                   onClick={() => { setPriority(p.value); updatePriority.mutate(p.value); }}
-                  className={`px-2 py-1 rounded-lg text-xs font-medium transition-all border-2 ${
-                    priority === p.value
-                      ? `${p.cls} border-current opacity-100 scale-105`
-                      : `${p.cls} border-transparent opacity-40`
+                  className={`w-5 h-5 rounded text-[9px] font-bold transition-all ${
+                    priority === p.value ? `${p.cls} opacity-100` : `${p.cls} opacity-30`
                   }`}
                 >
                   {p.label[0]}
