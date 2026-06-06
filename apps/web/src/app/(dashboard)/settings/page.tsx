@@ -251,7 +251,7 @@ function BackupTab() {
       <div className="bg-white dark:bg-slate-900 rounded-xl border p-6">
         <h2 className="font-semibold text-slate-800 dark:text-white mb-1">Backup Automático por E-mail</h2>
         <p className="text-sm text-slate-500 mb-4">
-          Todo dia às <strong>04:00 (horário de Brasília)</strong> um backup completo em Excel é enviado automaticamente para <strong>davi.negociosbr@gmail.com</strong>.
+          Todo dia às <strong>04:00 (horário de Brasília)</strong> um backup completo em Excel é enviado automaticamente para <strong>brolezinegocios@gmail.com</strong>.
         </p>
         <div className="flex items-start gap-4 p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
           <div className="p-3 rounded-lg bg-indigo-100 dark:bg-indigo-950/30 shrink-0">
