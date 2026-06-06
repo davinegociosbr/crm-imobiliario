@@ -139,8 +139,8 @@ export class ExportService {
   }
 
   async buildExcel(companyId: string): Promise<ExcelJS.Buffer> {
-    const [leads, properties, visits, proposals, reservations, sales, commissions, tasks, activities] = await Promise.all([
-      this.prisma.lead.findMany({ where: { companyId }, include: { assignedUser: { select: { name: true } } }, orderBy: { createdAt: 'asc' } }),
+    const [allLeads, properties, visits, proposals, reservations, sales, commissions, tasks, activities] = await Promise.all([
+      this.prisma.lead.findMany({ where: { companyId }, include: { assignedUser: { select: { name: true } } }, orderBy: { createdAt: 'desc' } }),
       this.prisma.property.findMany({ where: { companyId }, orderBy: { createdAt: 'asc' } }),
       this.prisma.visit.findMany({ where: { lead: { companyId } }, include: { lead: { select: { name: true } }, property: { select: { name: true, code: true } }, user: { select: { name: true } } }, orderBy: { scheduledAt: 'asc' } }),
       this.prisma.proposal.findMany({ where: { lead: { companyId } }, include: { lead: { select: { name: true } }, property: { select: { name: true, code: true } }, user: { select: { name: true } } }, orderBy: { createdAt: 'asc' } }),
@@ -150,6 +150,15 @@ export class ExportService {
       this.prisma.task.findMany({ where: { companyId }, include: { assignedUser: { select: { name: true } }, lead: { select: { name: true } } }, orderBy: { createdAt: 'asc' } }),
       this.prisma.activity.findMany({ where: { lead: { companyId } }, include: { user: { select: { name: true } }, lead: { select: { name: true } } }, orderBy: { createdAt: 'asc' } }),
     ]);
+
+    // Deduplica leads por telefone (mantém o mais recente de cada número)
+    const seenPhones = new Set<string>();
+    const leads = allLeads.filter((l) => {
+      const phone = (l.whatsapp || l.phone || '').replace(/\D/g, '');
+      if (!phone || seenPhones.has(phone)) return false;
+      seenPhones.add(phone);
+      return true;
+    });
 
     const wb = new ExcelJS.Workbook();
     wb.creator = 'CRM Imobiliário';
