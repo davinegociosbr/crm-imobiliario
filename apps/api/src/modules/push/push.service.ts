@@ -8,11 +8,15 @@ export class PushService {
   private readonly logger = new Logger(PushService.name);
 
   constructor(private prisma: PrismaService) {
-    webpush.setVapidDetails(
-      'mailto:brolezinegocios@gmail.com',
-      process.env.VAPID_PUBLIC_KEY!,
-      process.env.VAPID_PRIVATE_KEY!,
-    );
+    if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+      webpush.setVapidDetails(
+        'mailto:brolezinegocios@gmail.com',
+        process.env.VAPID_PUBLIC_KEY,
+        process.env.VAPID_PRIVATE_KEY,
+      );
+    } else {
+      this.logger.warn('VAPID keys not configured — push notifications disabled');
+    }
   }
 
   // Salva a subscription do browser do usuário
@@ -34,6 +38,7 @@ export class PushService {
 
   // Envia notificação para um usuário específico
   async sendToUser(userId: string, payload: { title: string; body: string; url?: string; icon?: string }) {
+    if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) return;
     const subs = await this.prisma.pushSubscription.findMany({ where: { userId } });
     const data = JSON.stringify({ ...payload, icon: payload.icon || '/icons/icon-192x192.png' });
 
