@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
-import * as nodemailer from 'nodemailer';
+import { Cron } from '@nestjs/schedule';
+import { Resend } from 'resend';
 import { ExportService } from '../export/export.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -19,7 +19,6 @@ export class BackupService {
     this.logger.log('Iniciando backup diário...');
 
     try {
-      // Busca todas as empresas ativas
       const companies = await this.prisma.company.findMany({
         select: { id: true, name: true },
       });
@@ -36,43 +35,27 @@ export class BackupService {
 
   async sendBackupForCompany(companyId: string, companyName: string) {
     const backupEmail = process.env.BACKUP_EMAIL;
-    const smtpUser  = process.env.SMTP_USER;
-    const smtpPass  = process.env.SMTP_PASS;
+    const resendKey   = process.env.RESEND_API_KEY;
 
-    if (!backupEmail || !smtpUser || !smtpPass) {
-      this.logger.warn('Variáveis de e-mail não configuradas (BACKUP_EMAIL, SMTP_USER, SMTP_PASS)');
-      return;
+    if (!backupEmail || !resendKey) {
+      this.logger.warn('Variáveis não configuradas (BACKUP_EMAIL, RESEND_API_KEY)');
+      throw new Error('Variáveis BACKUP_EMAIL e RESEND_API_KEY não configuradas no servidor');
     }
+
+    const resend = new Resend(resendKey);
 
     // Gera o Excel
     const buffer = await this.exportService.buildExcel(companyId);
     const date = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
     const filename = `backup-crm-${date}.xlsx`;
 
-    // Configura transporte SMTP (Gmail) — porta 587 STARTTLS
-    const cleanPass = smtpPass.replace(/\s/g, '');
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-      requireTLS: true,
-      auth: { user: smtpUser, pass: cleanPass },
-      connectionTimeout: 15000,
-      greetingTimeout: 15000,
-      socketTimeout: 30000,
-      tls: { rejectUnauthorized: false },
-    });
-
-    // Testa a conexão antes de tentar enviar
-    await transporter.verify();
-
     // Conta de leads e busca contatos do dia
     const now = new Date();
     const startOfDay = new Date(now); startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(now); endOfDay.setHours(23, 59, 59, 999);
+    const endOfDay   = new Date(now); endOfDay.setHours(23, 59, 59, 999);
 
     const [totalLeads, overdueLeads, todayLeads] = await Promise.all([
-      this.prisma.lead.count({ where: { companyId } }),
+      this.prisma.lead.count({ where: { companyId, status: { notIn: ['WON', 'LOST'] } } }),
       this.prisma.lead.findMany({
         where: { companyId, nextContactAt: { lt: startOfDay }, status: { notIn: ['WON', 'LOST'] } },
         select: { id: true, name: true, phone: true, whatsapp: true, nextAction: true, nextContactAt: true },
@@ -126,13 +109,13 @@ export class BackupService {
         <tbody>${todayLeads.map(l => renderLeadRow(l, false)).join('')}</tbody>
       </table>` : '<p style="color:#64748b">✅ Nenhum contato agendado para hoje.</p>';
 
-    await transporter.sendMail({
-      from: `"CRM Brolezi" <${smtpUser}>`,
+    const { error } = await resend.emails.send({
+      from: 'CRM Brolezi <onboarding@resend.dev>',
       to: backupEmail,
       subject: `🗓️ Agenda do dia ${date} — ${todayLeads.length} contato(s) · ${overdueLeads.length} vencido(s)`,
       html: `
         <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
-          <div style="background:#1e3a5f;padding:20px;border-radius:8px 8px 0 0;display:flex;align-items:center;gap:12px">
+          <div style="background:#1e3a5f;padding:20px;border-radius:8px 8px 0 0">
             <h2 style="color:white;margin:0">🏢 CRM Brolezi — Agenda Diária</h2>
           </div>
           <div style="background:#f8fafc;padding:20px;border:1px solid #e2e8f0">
@@ -163,11 +146,12 @@ export class BackupService {
       attachments: [
         {
           filename,
-          content: buffer as any,
-          contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          content: Buffer.from(buffer as any).toString('base64'),
         },
       ],
     });
+
+    if (error) throw new Error(error.message);
 
     this.logger.log(`Backup enviado para ${backupEmail}`);
   }
