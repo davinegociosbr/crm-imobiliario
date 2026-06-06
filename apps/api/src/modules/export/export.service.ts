@@ -164,7 +164,46 @@ export class ExportService {
     wb.creator = 'CRM Imobiliário';
     wb.created = new Date();
 
-    // ── ABA 1: LEADS ──────────────────────────────────────────────────────────
+    // ── ABA 1: FUNIL DE VENDAS ────────────────────────────────────────────────
+    const PIPELINE_ORDER = ['INITIAL_CONTACT', 'REDIRECT', 'ATTENDANCE', 'TODAY', 'FOLLOW_UP', 'CLIENTS', 'INACTIVE'];
+    const funilLeads = leads
+      .filter((l) => !['WON', 'LOST'].includes(l.status))
+      .sort((a, b) => PIPELINE_ORDER.indexOf(a.pipelineStage) - PIPELINE_ORDER.indexOf(b.pipelineStage));
+
+    const wsFunil = wb.addWorksheet('Funil de Vendas', { properties: { tabColor: { argb: 'FF0EA5E9' } } });
+    wsFunil.columns = [
+      { header: 'Etapa do Funil',         key: 'stage' },
+      { header: 'Nome',                   key: 'name' },
+      { header: 'Telefone',               key: 'phone' },
+      { header: 'WhatsApp',               key: 'whatsapp' },
+      { header: 'Interesse',              key: 'interest' },
+      { header: 'Valor Potencial (R$)',   key: 'potentialValue' },
+      { header: 'Origem',                 key: 'origin' },
+      { header: 'Próxima Ação',           key: 'nextAction' },
+      { header: 'Data Próximo Contato',   key: 'nextContactAt' },
+      { header: 'Corretor',               key: 'broker' },
+      { header: 'Cidade',                 key: 'city' },
+      { header: 'Cadastro',               key: 'createdAt' },
+    ];
+    funilLeads.forEach((l) => wsFunil.addRow({
+      stage: PIPELINE_PT[l.pipelineStage] || l.pipelineStage,
+      name: l.name,
+      phone: l.phone,
+      whatsapp: l.whatsapp || '',
+      interest: l.interest || '',
+      potentialValue: currency(l.potentialValue),
+      origin: ORIGIN_PT[l.origin] || l.origin,
+      nextAction: l.nextAction || '',
+      nextContactAt: ptDate(l.nextContactAt),
+      broker: l.assignedUser?.name || '',
+      city: l.city || '',
+      createdAt: ptDate(l.createdAt),
+    }));
+    styleHeader(wsFunil, 'FF0EA5E9');
+    styleDataRows(wsFunil);
+    autoWidth(wsFunil);
+
+    // ── ABA 2: LEADS ──────────────────────────────────────────────────────────
     const wsLeads = wb.addWorksheet('Leads', { properties: { tabColor: { argb: 'FF2563EB' } } });
     wsLeads.columns = [
       { header: 'Nome',               key: 'name' },
