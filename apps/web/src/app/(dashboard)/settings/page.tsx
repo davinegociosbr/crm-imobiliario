@@ -179,8 +179,9 @@ function BackupTab() {
     try {
       await api.post('/backup/send-now');
       toast.success('✅ Backup enviado para o e-mail configurado!');
-    } catch {
-      toast.error('❌ Erro ao enviar backup por e-mail. Verifique se o e-mail está configurado no servidor.');
+    } catch (err: any) {
+      const detail = err?.response?.data?.message || err?.message || 'Erro desconhecido';
+      toast.error(`❌ ${detail}`, { duration: 8000 });
     } finally {
       setLoadingEmail(false);
     }
