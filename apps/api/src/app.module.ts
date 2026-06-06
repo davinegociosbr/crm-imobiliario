@@ -22,6 +22,7 @@ import { AutomationsModule } from './modules/automations/automations.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { ExportModule } from './modules/export/export.module';
 import { BackupModule } from './modules/backup/backup.module';
+import { PushModule } from './modules/push/push.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { BackupModule } from './modules/backup/backup.module';
     AuditModule,
     ExportModule,
     BackupModule,
+    PushModule,
   ],
 })
 export class AppModule {}

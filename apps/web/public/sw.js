@@ -1,4 +1,4 @@
-const CACHE_NAME = 'crm-brolezi-v1';
+const CACHE_NAME = 'crm-brolezi-v2';
 const STATIC_ASSETS = [
   '/',
   '/dashboard',
@@ -37,7 +37,6 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Salva no cache se for uma resposta válida
         if (response && response.status === 200 && response.type === 'basic') {
           const cloned = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, cloned));
@@ -45,5 +44,38 @@ self.addEventListener('fetch', (event) => {
         return response;
       })
       .catch(() => caches.match(event.request))
+  );
+});
+
+// ── Recebe notificações push ───────────────────────────────────────────────
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+  const data = event.data.json();
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'CRM Brolezi', {
+      body: data.body || '',
+      icon: data.icon || '/icons/icon-192x192.png',
+      badge: '/icons/icon-72x72.png',
+      data: { url: data.url || '/dashboard' },
+      vibrate: [200, 100, 200],
+      requireInteraction: false,
+    })
+  );
+});
+
+// ── Ao clicar na notificação, abre o CRM ─────────────────────────────────
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || '/dashboard';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          client.navigate(url);
+          return client.focus();
+        }
+      }
+      return clients.openWindow(url);
+    })
   );
 });

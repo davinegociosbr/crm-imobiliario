@@ -196,7 +196,8 @@ model User {
   commissions   Commission[]
   tasks         Task[]        @relation("AssignedTasks")
   createdTasks  Task[]        @relation("CreatedTasks")
-  auditLogs     AuditLog[]
+  auditLogs         AuditLog[]
+  pushSubscriptions PushSubscription[]
 
   @@unique([email, companyId])
   @@map("users")
@@ -491,4 +492,18 @@ model Notification {
 
   @@index([userId])
   @@map("notifications")
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
 }
