@@ -50,10 +50,19 @@ export class BackupService {
     const filename = `backup-crm-${date}.xlsx`;
 
     // Configura transporte SMTP (Gmail) — remove espaços da senha de app
+    const cleanPass = smtpPass.replace(/\s/g, '');
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user: smtpUser, pass: smtpPass.replace(/\s/g, '') },
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true, // SSL
+      auth: { user: smtpUser, pass: cleanPass },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 30000,
     });
+
+    // Testa a conexão antes de tentar enviar
+    await transporter.verify();
 
     // Conta de leads e busca contatos do dia
     const now = new Date();

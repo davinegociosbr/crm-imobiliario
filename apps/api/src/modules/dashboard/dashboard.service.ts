@@ -108,11 +108,16 @@ export class DashboardService {
   }
 
   async getConversionByStage(companyId: string) {
-    const stages = ['INITIAL_CONTACT', 'QUALIFICATION', 'NEGOTIATION', 'CONTRACT_SIGNING'];
+    const stages = ['INITIAL_CONTACT', 'REDIRECT', 'ATTENDANCE', 'TODAY', 'FOLLOW_UP', 'CLIENTS', 'INACTIVE'];
+    const labels: Record<string, string> = {
+      INITIAL_CONTACT: 'Contato Inicial', REDIRECT: 'Redirecionar', ATTENDANCE: 'Atendimento',
+      TODAY: 'Hoje', FOLLOW_UP: 'Follow-up', CLIENTS: 'Clientes', INACTIVE: 'Inativos',
+    };
     return Promise.all(
       stages.map(async (stage) => ({
         stage,
-        count: await this.prisma.lead.count({ where: { companyId, pipelineStage: stage as any } }),
+        label: labels[stage],
+        count: await this.prisma.lead.count({ where: { companyId, pipelineStage: stage as any, status: { notIn: ['WON', 'LOST'] } } }),
       })),
     );
   }
