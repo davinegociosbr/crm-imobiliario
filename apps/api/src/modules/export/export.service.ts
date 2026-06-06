@@ -166,7 +166,8 @@ export class ExportService {
 
     // ── ABA 1: FUNIL DE VENDAS ────────────────────────────────────────────────
     const PIPELINE_ORDER = ['INITIAL_CONTACT', 'REDIRECT', 'ATTENDANCE', 'TODAY', 'FOLLOW_UP', 'CLIENTS', 'INACTIVE'];
-    const funilLeads = leads
+    // Sem deduplicação: cada card do funil é um negócio independente
+    const funilLeads = allLeads
       .filter((l) => !['WON', 'LOST'].includes(l.status))
       .sort((a, b) => PIPELINE_ORDER.indexOf(a.pipelineStage) - PIPELINE_ORDER.indexOf(b.pipelineStage));
 
