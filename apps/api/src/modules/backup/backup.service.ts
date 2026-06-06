@@ -49,16 +49,18 @@ export class BackupService {
     const date = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
     const filename = `backup-crm-${date}.xlsx`;
 
-    // Configura transporte SMTP (Gmail) — remove espaços da senha de app
+    // Configura transporte SMTP (Gmail) — porta 587 STARTTLS
     const cleanPass = smtpPass.replace(/\s/g, '');
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
-      port: 465,
-      secure: true, // SSL
+      port: 587,
+      secure: false,
+      requireTLS: true,
       auth: { user: smtpUser, pass: cleanPass },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
       socketTimeout: 30000,
+      tls: { rejectUnauthorized: false },
     });
 
     // Testa a conexão antes de tentar enviar
