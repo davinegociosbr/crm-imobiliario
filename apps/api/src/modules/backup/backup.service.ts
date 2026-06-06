@@ -49,10 +49,10 @@ export class BackupService {
     const date = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
     const filename = `backup-crm-${date}.xlsx`;
 
-    // Configura transporte SMTP (Gmail)
+    // Configura transporte SMTP (Gmail) — remove espaços da senha de app
     const transporter = nodemailer.createTransport({
       service: 'gmail',
-      auth: { user: smtpUser, pass: smtpPass },
+      auth: { user: smtpUser, pass: smtpPass.replace(/\s/g, '') },
     });
 
     // Conta de leads e busca contatos do dia
