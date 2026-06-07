@@ -12,21 +12,24 @@ export class DashboardService {
     const end = period === 'year' ? endOfYear(now) : endOfMonth(now);
 
     const [
-      totalLeads,
-      newLeads,
-      inProgressLeads,
+      activeLeadsRaw,
+      newLeadsRaw,
       scheduledVisits,
       completedVisits,
       sales,
       commissions,
       tasks,
     ] = await Promise.all([
-      // Total de leads ativos (exclui LOST/WON para não contar cards removidos do funil)
-      this.prisma.lead.count({ where: { companyId, status: { notIn: ['WON', 'LOST'] } } }),
-      // Leads criados no período (qualquer status, exceto LOST)
-      this.prisma.lead.count({ where: { companyId, status: { notIn: ['LOST'] }, createdAt: { gte: start, lte: end } } }),
-      // Leads ativos no funil (não encerrados)
-      this.prisma.lead.count({ where: { companyId, status: { notIn: ['WON', 'LOST'] } } }),
+      // Busca leads ativos para deduplicar por telefone
+      this.prisma.lead.findMany({
+        where: { companyId, status: { notIn: ['WON', 'LOST'] } },
+        select: { phone: true, whatsapp: true },
+      }),
+      // Leads criados no período para deduplicar por telefone
+      this.prisma.lead.findMany({
+        where: { companyId, status: { notIn: ['LOST'] }, createdAt: { gte: start, lte: end } },
+        select: { phone: true, whatsapp: true },
+      }),
       this.prisma.visit.count({
         where: { lead: { companyId }, status: 'SCHEDULED', scheduledAt: { gte: start, lte: end } },
       }),
@@ -45,6 +48,20 @@ export class DashboardService {
         where: { companyId, status: 'PENDING', dueAt: { lte: now } },
       }),
     ]);
+
+    // Deduplicação por telefone
+    const uniquePhone = (leads: { phone: string; whatsapp: string | null }[]) => {
+      const seen = new Set<string>();
+      for (const l of leads) {
+        const p = (l.whatsapp || l.phone || '').replace(/\D/g, '');
+        if (p) seen.add(p);
+      }
+      return seen.size || leads.length;
+    };
+
+    const totalLeads     = uniquePhone(activeLeadsRaw);
+    const newLeads       = uniquePhone(newLeadsRaw);
+    const inProgressLeads = totalLeads;
 
     const totalSoldValue = sales.reduce((acc, s) => acc + Number(s.saleValue), 0);
     const totalCommission = sales.reduce((acc, s) => acc + Number(s.commissionValue), 0);

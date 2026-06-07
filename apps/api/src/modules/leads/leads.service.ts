@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { LeadStatus, LeadOrigin, PipelineStage } from '@prisma/client';
 
@@ -117,6 +117,19 @@ export class LeadsService {
 
   async create(companyId: string, userId: string, dto: CreateLeadDto) {
     const data = this.sanitize(dto);
+
+    // Verifica duplicata por telefone (mesmo número já cadastrado na empresa)
+    const phone = (data.phone || '').replace(/\D/g, '');
+    if (phone) {
+      const existing = await this.prisma.lead.findFirst({
+        where: { companyId, phone: { contains: phone } },
+        select: { id: true, name: true },
+      });
+      if (existing) {
+        throw new ConflictException(`Já existe um lead com este telefone: ${existing.name}`);
+      }
+    }
+
     return this.prisma.lead.create({
       data: {
         ...data,
