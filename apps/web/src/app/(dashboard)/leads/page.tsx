@@ -27,21 +27,16 @@ function AddToPipelineModal({ lead, onClose }: { lead: any; onClose: () => void 
   const handleAdd = async () => {
     setLoading(true);
     try {
-      // Cria um NOVO lead (card) baseado no contato existente — permite múltiplos cards
-      await api.post('/leads', {
-        name: lead.name,
-        phone: lead.phone,
-        whatsapp: lead.whatsapp,
-        email: lead.email,
-        city: lead.city,
-        state: lead.state,
-        origin: lead.origin,
-        interest: interest || lead.interest,
-        pipelineStage: stage,
-        status: 'IN_PROGRESS',
-      });
+      // Atualiza interesse se preenchido e move para a etapa do funil
+      if (interest && interest !== lead.interest) {
+        await api.put(`/leads/${lead.id}`, { interest, status: 'IN_PROGRESS' });
+      } else {
+        await api.put(`/leads/${lead.id}`, { status: 'IN_PROGRESS' });
+      }
+      await api.put(`/pipeline/${lead.id}/move`, { stage });
       qc.invalidateQueries({ queryKey: ['leads'] });
-      toast.success(`Novo card criado para ${lead.name} no funil!`);
+      qc.invalidateQueries({ queryKey: ['pipeline-kanban'] });
+      toast.success(`${lead.name} adicionado ao funil!`);
       onClose();
     } catch {
       toast.error('Erro ao criar card no funil');

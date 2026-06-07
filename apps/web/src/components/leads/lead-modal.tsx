@@ -35,8 +35,9 @@ export function LeadModal({ lead, onClose }: Props) {
       const res = await api.post('/leads', data);
       const newLead = res.data;
 
-      // Se marcou para adicionar ao funil, move para a etapa escolhida
+      // Se marcou para adicionar ao funil, atualiza status e move para a etapa escolhida
       if (addToPipeline && newLead?.id) {
+        await api.put(`/leads/${newLead.id}`, { status: 'IN_PROGRESS' });
         await api.put(`/pipeline/${newLead.id}/move`, { stage: pipelineStage });
       }
       return res;
