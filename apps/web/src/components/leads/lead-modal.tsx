@@ -1,28 +1,50 @@
 'use client';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, Kanban } from 'lucide-react';
 import { api } from '@/lib/api';
-import { LEAD_ORIGINS } from '@/lib/utils';
+import { LEAD_ORIGINS, PIPELINE_STAGES } from '@/lib/utils';
 
 interface Props {
   lead?: any;
   onClose: () => void;
 }
 
+const PIPELINE_OPTIONS = Object.entries(PIPELINE_STAGES).map(([value, info]) => ({
+  value,
+  label: info.label,
+}));
+
 export function LeadModal({ lead, onClose }: Props) {
   const qc = useQueryClient();
+  const [addToPipeline, setAddToPipeline] = useState(false);
+  const [pipelineStage, setPipelineStage] = useState('INITIAL_CONTACT');
+
   const { register, handleSubmit, formState: { isSubmitting } } = useForm({
     defaultValues: lead || {},
   });
 
   const mutation = useMutation({
-    mutationFn: (data: any) =>
-      lead ? api.put(`/leads/${lead.id}`, data) : api.post('/leads', data),
+    mutationFn: async (data: any) => {
+      if (lead) {
+        return api.put(`/leads/${lead.id}`, data);
+      }
+      // Cria o lead
+      const res = await api.post('/leads', data);
+      const newLead = res.data;
+
+      // Se marcou para adicionar ao funil, move para a etapa escolhida
+      if (addToPipeline && newLead?.id) {
+        await api.put(`/pipeline/${newLead.id}/move`, { stage: pipelineStage });
+      }
+      return res;
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['leads'] });
-      toast.success(lead ? 'Lead atualizado!' : 'Lead criado!');
+      qc.invalidateQueries({ queryKey: ['pipeline-kanban'] });
+      toast.success(lead ? 'Lead atualizado!' : addToPipeline ? 'Lead criado e adicionado ao funil!' : 'Lead criado!');
       onClose();
     },
     onError: (err: any) => toast.error(err.response?.data?.message || 'Erro ao salvar'),
@@ -93,6 +115,53 @@ export function LeadModal({ lead, onClose }: Props) {
               <input {...register('interest')} className="input-field" placeholder="Apartamento 3 dorms, Moema..." />
             </div>
           </div>
+
+          {/* ── Criar card no funil ─────────────────────────────────────── */}
+          {!lead && (
+            <div className={`rounded-xl border-2 transition-colors ${addToPipeline ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50'}`}>
+              <button
+                type="button"
+                onClick={() => setAddToPipeline(!addToPipeline)}
+                className="w-full flex items-center gap-3 p-4 text-left"
+              >
+                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${addToPipeline ? 'bg-blue-600 border-blue-600' : 'border-slate-300 dark:border-slate-600'}`}>
+                  {addToPipeline && (
+                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Kanban className={`w-4 h-4 ${addToPipeline ? 'text-blue-600' : 'text-slate-400'}`} />
+                  <span className={`text-sm font-medium ${addToPipeline ? 'text-blue-700 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400'}`}>
+                    Criar card no Funil de Vendas
+                  </span>
+                </div>
+              </button>
+
+              {addToPipeline && (
+                <div className="px-4 pb-4">
+                  <label className="block text-xs font-medium text-slate-500 mb-2">Etapa do funil</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {PIPELINE_OPTIONS.map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setPipelineStage(opt.value)}
+                        className={`py-2 px-3 rounded-lg text-sm font-medium border transition-all text-left ${
+                          pipelineStage === opt.value
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-blue-400'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 py-2.5 border rounded-lg text-sm font-medium hover:bg-slate-50">
