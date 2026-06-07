@@ -44,12 +44,12 @@ export default function LoginPage() {
         <Image
           src="/logo-brolezi-white.png"
           alt="Brolezi Negócios Imobiliários"
-          width={320}
-          height={320}
-          className="object-contain drop-shadow-[0_0_32px_rgba(99,179,237,0.35)]"
+          width={110}
+          height={110}
+          className="object-contain drop-shadow-[0_0_20px_rgba(99,179,237,0.3)]"
           priority
         />
-        <p className="text-blue-300/70 text-sm font-light tracking-[0.2em] uppercase mt-2 mb-5">
+        <p className="text-blue-300/60 text-xs font-light tracking-[0.25em] uppercase mt-3 mb-4">
           Brolezi Negócios Imobiliários
         </p>
       </div>
