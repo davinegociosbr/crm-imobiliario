@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { Phone, MessageCircle, Calendar, Briefcase, X, Loader2, Plus, StickyNote, Clock, Palette, Trash2, Pencil, Check, CheckCircle2, Circle, Search, Filter, History } from 'lucide-react';
+import { Phone, MessageCircle, Calendar, Briefcase, X, Loader2, Plus, StickyNote, Clock, Palette, Trash2, Pencil, Check, CheckCircle2, Circle, Search, Filter, History, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { api } from '@/lib/api';
@@ -743,6 +743,17 @@ export default function PipelinePage() {
   const [search, setSearch] = useState('');
   const [originFilter, setOriginFilter] = useState('');
 
+  // Ordenação por coluna: null = padrão, 'asc' = vencimento crescente, 'desc' = decrescente
+  const [columnSorts, setColumnSorts] = useState<Record<string, 'asc' | 'desc' | null>>({});
+
+  const cycleSort = (stage: string) => {
+    setColumnSorts(prev => {
+      const cur = prev[stage];
+      const next = cur === null || cur === undefined ? 'asc' : cur === 'asc' ? 'desc' : null;
+      return { ...prev, [stage]: next };
+    });
+  };
+
   // Cores salvas no localStorage para persistir entre sessões
   const [stageColors, setStageColors] = useState<Record<string, string>>(() => {
     if (typeof window === 'undefined') return {};
@@ -817,11 +828,19 @@ export default function PipelinePage() {
           {STAGES.map((stage) => {
             const stageInfo = PIPELINE_STAGES[stage];
             const color = stageColors[stage] || stageInfo.color;
-            const leads = (kanban?.[stage] || []).filter((lead: any) => {
-              if (search && !lead.name?.toLowerCase().includes(search.toLowerCase()) && !lead.phone?.includes(search)) return false;
-              if (originFilter && lead.origin !== originFilter) return false;
-              return true;
-            });
+            const sort = columnSorts[stage];
+            const leads = (kanban?.[stage] || [])
+              .filter((lead: any) => {
+                if (search && !lead.name?.toLowerCase().includes(search.toLowerCase()) && !lead.phone?.includes(search)) return false;
+                if (originFilter && lead.origin !== originFilter) return false;
+                return true;
+              })
+              .sort((a: any, b: any) => {
+                if (!sort) return 0;
+                const da = a.nextContactAt ? new Date(a.nextContactAt).getTime() : Infinity;
+                const db = b.nextContactAt ? new Date(b.nextContactAt).getTime() : Infinity;
+                return sort === 'asc' ? da - db : db - da;
+              });
 
             return (
               <div key={stage} className="w-72 shrink-0 flex flex-col">
@@ -833,6 +852,18 @@ export default function PipelinePage() {
                         ? `${leads.length}/${(kanban?.[stage] || []).length}`
                         : leads.length}
                     </span>
+                    {/* Botão ordenar por vencimento */}
+                    <button
+                      onClick={() => cycleSort(stage)}
+                      title={!sort ? 'Ordenar por vencimento' : sort === 'asc' ? 'Mais recente primeiro' : 'Desativar ordenação'}
+                      className="p-1 rounded hover:bg-white/20 transition-colors"
+                    >
+                      {!sort
+                        ? <ArrowUpDown className="w-3.5 h-3.5 text-white/70" />
+                        : sort === 'asc'
+                        ? <ArrowUp className="w-3.5 h-3.5 text-white" />
+                        : <ArrowDown className="w-3.5 h-3.5 text-white" />}
+                    </button>
                     <ColorPicker stage={stage} currentColor={color} onSelect={(c) => updateColor(stage, c)} />
                   </div>
                 </div>
