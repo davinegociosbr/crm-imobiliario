@@ -25,4 +25,14 @@ export class PushController {
   unsubscribe(@CurrentUser() user: any, @Body() body: { endpoint: string }) {
     return this.pushService.removeSubscription(user.id, body.endpoint);
   }
+
+  @Post('test')
+  async test(@CurrentUser() user: any) {
+    await this.pushService.sendToUser(user.id, {
+      title: '🔔 CRM Brolezi — Teste',
+      body: 'Notificações push funcionando perfeitamente!',
+      url: '/dashboard',
+    });
+    return { ok: true };
+  }
 }

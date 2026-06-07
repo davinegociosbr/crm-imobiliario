@@ -178,6 +178,31 @@ function PushButton() {
   );
 }
 
+// ── Botão de teste de notificação ────────────────────────────────────────────
+function TestPushButton() {
+  const [loading, setLoading] = useState(false);
+  const handleTest = async () => {
+    setLoading(true);
+    try {
+      await api.post('/push/test');
+      toast.success('Notificação enviada! Verifique seu dispositivo.');
+    } catch {
+      toast.error('Erro ao enviar notificação de teste');
+    } finally {
+      setLoading(false);
+    }
+  };
+  return (
+    <button
+      onClick={handleTest}
+      disabled={loading}
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
+    >
+      {loading ? '...' : '🔔 Testar'}
+    </button>
+  );
+}
+
 // ── Página principal ──────────────────────────────────────────────────────────
 export default function TasksPage() {
   const qc = useQueryClient();
@@ -218,6 +243,7 @@ export default function TasksPage() {
         </div>
         <div className="flex items-center gap-2">
           <PushButton />
+          <TestPushButton />
           {/* Botão desktop */}
           <button
             onClick={() => setShowModal(true)}
