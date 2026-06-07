@@ -626,30 +626,42 @@ function LeadCard({ lead, index, onOpen }: { lead: any; index: number; onOpen: (
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          className={`bg-white dark:bg-slate-800 rounded-lg p-2.5 border shadow-sm cursor-grab active:cursor-grabbing transition-shadow ${
+          className={`rounded-lg p-2.5 border shadow-sm cursor-grab active:cursor-grabbing transition-all ${
             snapshot.isDragging
-              ? 'shadow-lg ring-2 ring-blue-500'
-              : 'border-slate-200 dark:border-slate-700 hover:shadow-md'
+              ? 'bg-white dark:bg-slate-800 shadow-lg ring-2 ring-blue-500 border-blue-400'
+              : isOverdue
+              ? 'bg-red-50 dark:bg-red-950/20 border-red-400 dark:border-red-600 shadow-red-100 dark:shadow-red-900/20 animate-pulse-border'
+              : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:shadow-md'
           }`}
           onClick={() => !snapshot.isDragging && onOpen(lead)}
         >
           {/* Linha 1: Nome + data */}
           <div className="flex items-start justify-between gap-1 mb-1">
-            <p className="font-semibold text-slate-900 dark:text-white text-xs leading-tight line-clamp-1 flex-1">
+            <p className={`font-semibold text-xs leading-tight line-clamp-1 flex-1 ${isOverdue ? 'text-red-800 dark:text-red-200' : 'text-slate-900 dark:text-white'}`}>
               {lead.name}
             </p>
-            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded shrink-0 ${
-              !nextContact
-                ? 'bg-slate-100 text-slate-400 dark:bg-slate-700'
-                : isOverdue
-                ? 'bg-red-50 text-red-600 dark:bg-red-950/30'
-                : 'bg-green-50 text-green-700 dark:bg-green-950/30'
-            }`}>
-              {nextContact
-                ? nextContact.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })
-                : 'Sem data'}
-            </span>
+            {isOverdue ? (
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 bg-red-500 text-white animate-pulse">
+                ⚠ VENCIDO
+              </span>
+            ) : (
+              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded shrink-0 ${
+                !nextContact
+                  ? 'bg-slate-100 text-slate-400 dark:bg-slate-700'
+                  : 'bg-green-50 text-green-700 dark:bg-green-950/30'
+              }`}>
+                {nextContact
+                  ? nextContact.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })
+                  : 'Sem data'}
+              </span>
+            )}
           </div>
+          {/* Data vencida por extenso */}
+          {isOverdue && nextContact && (
+            <p className="text-[10px] text-red-500 font-medium mb-1">
+              📅 {nextContact.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+            </p>
+          )}
 
           {/* Linha 2: Interesse */}
           {lead.interest && (
