@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { Phone, MessageCircle, Calendar, Briefcase, X, Loader2, Plus, StickyNote, Clock, Palette, Trash2, Pencil, Check, CheckCircle2, Circle, Search, Filter, History, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Phone, MessageCircle, Calendar, Briefcase, X, Loader2, Plus, StickyNote, Clock, Palette, Trash2, Pencil, Check, CheckCircle2, Circle, Search, Filter, History, ArrowUpDown, ArrowUp, ArrowDown, ArrowDownAZ } from 'lucide-react';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { api } from '@/lib/api';
@@ -743,14 +743,15 @@ export default function PipelinePage() {
   const [search, setSearch] = useState('');
   const [originFilter, setOriginFilter] = useState('');
 
-  // Ordenação por coluna: null = padrão, 'asc' = vencimento crescente, 'desc' = decrescente
-  const [columnSorts, setColumnSorts] = useState<Record<string, 'asc' | 'desc' | null>>({});
+  // Ordenação por coluna: null = padrão, 'date-asc' = vencimento crescente, 'date-desc' = decrescente, 'alpha' = A→Z
+  const [columnSorts, setColumnSorts] = useState<Record<string, 'date-asc' | 'date-desc' | 'alpha' | null>>({});
 
   const cycleSort = (stage: string) => {
     setColumnSorts(prev => {
       const cur = prev[stage];
-      const next = cur === null || cur === undefined ? 'asc' : cur === 'asc' ? 'desc' : null;
-      return { ...prev, [stage]: next };
+      const order: Array<'date-asc' | 'date-desc' | 'alpha' | null> = ['date-asc', 'date-desc', 'alpha', null];
+      const idx = order.indexOf(cur ?? null);
+      return { ...prev, [stage]: order[(idx + 1) % order.length] };
     });
   };
 
@@ -837,9 +838,10 @@ export default function PipelinePage() {
               })
               .sort((a: any, b: any) => {
                 if (!sort) return 0;
+                if (sort === 'alpha') return a.name.localeCompare(b.name, 'pt-BR');
                 const da = a.nextContactAt ? new Date(a.nextContactAt).getTime() : Infinity;
                 const db = b.nextContactAt ? new Date(b.nextContactAt).getTime() : Infinity;
-                return sort === 'asc' ? da - db : db - da;
+                return sort === 'date-asc' ? da - db : db - da;
               });
 
             return (
@@ -847,24 +849,31 @@ export default function PipelinePage() {
                 <div className={`rounded-lg ${color} text-white mb-2`}>
                   <div className="flex items-center justify-between px-3 py-2">
                     <span className="font-medium text-sm">{stageInfo.label}</span>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1">
                       <span className="bg-white/20 text-xs px-2 py-0.5 rounded-full">
                         {(search || originFilter) && leads.length !== (kanban?.[stage] || []).length
                           ? `${leads.length}/${(kanban?.[stage] || []).length}`
                           : leads.length}
                       </span>
+                      {/* Botão de ordenação */}
+                      <button
+                        onClick={() => cycleSort(stage)}
+                        title={
+                          !sort ? 'Ordenar coluna' :
+                          sort === 'date-asc' ? 'Vencimento: mais antigo primeiro' :
+                          sort === 'date-desc' ? 'Vencimento: mais recente primeiro' :
+                          'Ordem alfabética (A→Z)'
+                        }
+                        className={`p-1 rounded transition-colors ${sort ? 'bg-white/30 hover:bg-white/40' : 'hover:bg-white/20'}`}
+                      >
+                        {!sort       && <ArrowUpDown   className="w-3.5 h-3.5 text-white/80" />}
+                        {sort === 'date-asc'  && <ArrowUp       className="w-3.5 h-3.5 text-white" />}
+                        {sort === 'date-desc' && <ArrowDown      className="w-3.5 h-3.5 text-white" />}
+                        {sort === 'alpha'     && <ArrowDownAZ    className="w-3.5 h-3.5 text-white" />}
+                      </button>
                       <ColorPicker stage={stage} currentColor={color} onSelect={(c) => updateColor(stage, c)} />
                     </div>
                   </div>
-                  {/* Botão de ordenação visível */}
-                  <button
-                    onClick={() => cycleSort(stage)}
-                    className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-black/20 hover:bg-black/30 transition-colors text-white text-xs font-medium rounded-b-lg"
-                  >
-                    {!sort && <><ArrowUpDown className="w-3 h-3" /> Ordenar por vencimento</>}
-                    {sort === 'asc' && <><ArrowUp className="w-3 h-3" /> Mais antigo primeiro</>}
-                    {sort === 'desc' && <><ArrowDown className="w-3 h-3" /> Mais recente primeiro</>}
-                  </button>
                 </div>
 
                 <Droppable droppableId={stage}>
