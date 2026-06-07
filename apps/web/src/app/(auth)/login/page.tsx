@@ -44,8 +44,8 @@ export default function LoginPage() {
         <Image
           src="/logo-brolezi-white.png"
           alt="Brolezi Negócios Imobiliários"
-          width={200}
-          height={200}
+          width={320}
+          height={320}
           className="object-contain drop-shadow-[0_0_32px_rgba(99,179,237,0.35)]"
           priority
         />
