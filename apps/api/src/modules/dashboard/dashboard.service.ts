@@ -14,6 +14,7 @@ export class DashboardService {
     const [
       activeLeadsRaw,
       newLeadsRaw,
+      inProgressLeads,
       scheduledVisits,
       completedVisits,
       sales,
@@ -30,6 +31,8 @@ export class DashboardService {
         where: { companyId, status: { notIn: ['LOST'] }, createdAt: { gte: start, lte: end } },
         select: { phone: true, whatsapp: true },
       }),
+      // Negócios no funil — todos os cards ativos (sem deduplicar)
+      this.prisma.lead.count({ where: { companyId, status: { notIn: ['WON', 'LOST'] } } }),
       this.prisma.visit.count({
         where: { lead: { companyId }, status: 'SCHEDULED', scheduledAt: { gte: start, lte: end } },
       }),
@@ -59,9 +62,9 @@ export class DashboardService {
       return seen.size || leads.length;
     };
 
-    const totalLeads     = uniquePhone(activeLeadsRaw);
-    const newLeads       = uniquePhone(newLeadsRaw);
-    const inProgressLeads = totalLeads;
+    const totalLeads = uniquePhone(activeLeadsRaw);
+    const newLeads   = uniquePhone(newLeadsRaw);
+    // inProgressLeads já vem do banco (todos os cards no funil)
 
     const totalSoldValue = sales.reduce((acc, s) => acc + Number(s.saleValue), 0);
     const totalCommission = sales.reduce((acc, s) => acc + Number(s.commissionValue), 0);
