@@ -27,19 +27,18 @@ function AddToPipelineModal({ lead, onClose }: { lead: any; onClose: () => void 
   const handleAdd = async () => {
     setLoading(true);
     try {
-      // Atualiza interesse se preenchido e move para a etapa do funil
-      if (interest && interest !== lead.interest) {
-        await api.put(`/leads/${lead.id}`, { interest, status: 'IN_PROGRESS' });
-      } else {
-        await api.put(`/leads/${lead.id}`, { status: 'IN_PROGRESS' });
-      }
+      // Move o lead para a etapa escolhida (o moveCard já muda status para IN_PROGRESS)
       await api.put(`/pipeline/${lead.id}/move`, { stage });
+      // Atualiza interesse se foi alterado
+      if (interest && interest !== lead.interest) {
+        await api.put(`/leads/${lead.id}`, { interest });
+      }
       qc.invalidateQueries({ queryKey: ['leads'] });
       qc.invalidateQueries({ queryKey: ['pipeline-kanban'] });
       toast.success(`${lead.name} adicionado ao funil!`);
       onClose();
-    } catch {
-      toast.error('Erro ao criar card no funil');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Erro ao adicionar ao funil');
     } finally {
       setLoading(false);
     }
