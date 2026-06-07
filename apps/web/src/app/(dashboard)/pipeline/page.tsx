@@ -844,28 +844,27 @@ export default function PipelinePage() {
 
             return (
               <div key={stage} className="w-72 shrink-0 flex flex-col">
-                <div className={`flex items-center justify-between px-3 py-2 rounded-lg ${color} text-white mb-3`}>
-                  <span className="font-medium text-sm">{stageInfo.label}</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="bg-white/20 text-xs px-2 py-0.5 rounded-full">
-                      {(search || originFilter) && leads.length !== (kanban?.[stage] || []).length
-                        ? `${leads.length}/${(kanban?.[stage] || []).length}`
-                        : leads.length}
-                    </span>
-                    {/* Botão ordenar por vencimento */}
-                    <button
-                      onClick={() => cycleSort(stage)}
-                      title={!sort ? 'Ordenar por vencimento' : sort === 'asc' ? 'Mais recente primeiro' : 'Desativar ordenação'}
-                      className="p-1 rounded hover:bg-white/20 transition-colors"
-                    >
-                      {!sort
-                        ? <ArrowUpDown className="w-3.5 h-3.5 text-white/70" />
-                        : sort === 'asc'
-                        ? <ArrowUp className="w-3.5 h-3.5 text-white" />
-                        : <ArrowDown className="w-3.5 h-3.5 text-white" />}
-                    </button>
-                    <ColorPicker stage={stage} currentColor={color} onSelect={(c) => updateColor(stage, c)} />
+                <div className={`rounded-lg ${color} text-white mb-2`}>
+                  <div className="flex items-center justify-between px-3 py-2">
+                    <span className="font-medium text-sm">{stageInfo.label}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="bg-white/20 text-xs px-2 py-0.5 rounded-full">
+                        {(search || originFilter) && leads.length !== (kanban?.[stage] || []).length
+                          ? `${leads.length}/${(kanban?.[stage] || []).length}`
+                          : leads.length}
+                      </span>
+                      <ColorPicker stage={stage} currentColor={color} onSelect={(c) => updateColor(stage, c)} />
+                    </div>
                   </div>
+                  {/* Botão de ordenação visível */}
+                  <button
+                    onClick={() => cycleSort(stage)}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-black/20 hover:bg-black/30 transition-colors text-white text-xs font-medium rounded-b-lg"
+                  >
+                    {!sort && <><ArrowUpDown className="w-3 h-3" /> Ordenar por vencimento</>}
+                    {sort === 'asc' && <><ArrowUp className="w-3 h-3" /> Mais antigo primeiro</>}
+                    {sort === 'desc' && <><ArrowDown className="w-3 h-3" /> Mais recente primeiro</>}
+                  </button>
                 </div>
 
                 <Droppable droppableId={stage}>
