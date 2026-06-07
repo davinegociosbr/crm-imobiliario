@@ -48,11 +48,11 @@ export function Sidebar() {
       <div className="flex items-center gap-3 p-4 border-b border-sidebar-border">
         <div className="shrink-0">
           <Image
-            src="/logo-brolezi.png"
+            src="/logo-brolezi-white.png"
             alt="Brolezi"
-            width={collapsed ? 32 : 36}
-            height={collapsed ? 32 : 36}
-            className="rounded-lg"
+            width={collapsed ? 28 : 36}
+            height={collapsed ? 28 : 36}
+            className="object-contain"
           />
         </div>
         {!collapsed && (
