@@ -36,8 +36,8 @@ export default function LoginPage() {
   };
 
   return (
-    // Card único com a mesma cor de fundo da logo (#0d1b3e)
-    <div className="rounded-2xl shadow-2xl overflow-hidden" style={{ backgroundColor: '#0d1b3e' }}>
+    // Card único com a mesma cor de fundo da logo (#01133d — cor exata amostrada da imagem)
+    <div className="rounded-2xl shadow-2xl overflow-hidden" style={{ backgroundColor: '#01133d' }}>
 
       {/* Área da logo — mesma cor, sem borda visível */}
       <div className="flex flex-col items-center pt-8 pb-2">
