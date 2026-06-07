@@ -691,6 +691,66 @@ function LeadCard({ lead, index, onOpen }: { lead: any; index: number; onOpen: (
   );
 }
 
+// ─── Seletor de ordenação da coluna ──────────────────────────────────────────
+function SortPicker({ stage, sort, onSelect }: {
+  stage: string;
+  sort: 'date-asc' | 'date-desc' | 'alpha' | null;
+  onSelect: (v: 'date-asc' | 'date-desc' | 'alpha' | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const OPTIONS = [
+    { value: null,        icon: <ArrowUpDown className="w-3.5 h-3.5" />, label: 'Padrão (sem ordenação)' },
+    { value: 'date-asc',  icon: <ArrowUp     className="w-3.5 h-3.5" />, label: 'Vencimento: mais antigo' },
+    { value: 'date-desc', icon: <ArrowDown    className="w-3.5 h-3.5" />, label: 'Vencimento: mais recente' },
+    { value: 'alpha',     icon: <ArrowDownAZ  className="w-3.5 h-3.5" />, label: 'Alfabético (A → Z)' },
+  ] as const;
+
+  const current = OPTIONS.find(o => o.value === sort) ?? OPTIONS[0];
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={e => { e.stopPropagation(); setOpen(!open); }}
+        title="Ordenar coluna"
+        className={`p-1 rounded transition-colors ${sort ? 'bg-white/30 hover:bg-white/40' : 'hover:bg-white/20'}`}
+      >
+        <span className={sort ? 'text-white' : 'text-white/80'}>{current.icon}</span>
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-8 z-50 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 p-1.5 w-52">
+          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide px-2 py-1">Ordenar por</p>
+          {OPTIONS.map(opt => (
+            <button
+              key={String(opt.value)}
+              onClick={() => { onSelect(opt.value as any); setOpen(false); }}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors text-left ${
+                sort === opt.value
+                  ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 font-medium'
+                  : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+              }`}
+            >
+              {opt.icon}
+              {opt.label}
+              {sort === opt.value && <Check className="w-3.5 h-3.5 ml-auto" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Seletor de cor da coluna ─────────────────────────────────────────────────
 function ColorPicker({ stage, currentColor, onSelect }: { stage: string; currentColor: string; onSelect: (color: string) => void }) {
   const [open, setOpen] = useState(false);
@@ -746,13 +806,8 @@ export default function PipelinePage() {
   // Ordenação por coluna: null = padrão, 'date-asc' = vencimento crescente, 'date-desc' = decrescente, 'alpha' = A→Z
   const [columnSorts, setColumnSorts] = useState<Record<string, 'date-asc' | 'date-desc' | 'alpha' | null>>({});
 
-  const cycleSort = (stage: string) => {
-    setColumnSorts(prev => {
-      const cur = prev[stage];
-      const order: Array<'date-asc' | 'date-desc' | 'alpha' | null> = ['date-asc', 'date-desc', 'alpha', null];
-      const idx = order.indexOf(cur ?? null);
-      return { ...prev, [stage]: order[(idx + 1) % order.length] };
-    });
+  const setSort = (stage: string, value: 'date-asc' | 'date-desc' | 'alpha' | null) => {
+    setColumnSorts(prev => ({ ...prev, [stage]: value }));
   };
 
   // Cores salvas no localStorage para persistir entre sessões
@@ -855,22 +910,7 @@ export default function PipelinePage() {
                           ? `${leads.length}/${(kanban?.[stage] || []).length}`
                           : leads.length}
                       </span>
-                      {/* Botão de ordenação */}
-                      <button
-                        onClick={() => cycleSort(stage)}
-                        title={
-                          !sort ? 'Ordenar coluna' :
-                          sort === 'date-asc' ? 'Vencimento: mais antigo primeiro' :
-                          sort === 'date-desc' ? 'Vencimento: mais recente primeiro' :
-                          'Ordem alfabética (A→Z)'
-                        }
-                        className={`p-1 rounded transition-colors ${sort ? 'bg-white/30 hover:bg-white/40' : 'hover:bg-white/20'}`}
-                      >
-                        {!sort       && <ArrowUpDown   className="w-3.5 h-3.5 text-white/80" />}
-                        {sort === 'date-asc'  && <ArrowUp       className="w-3.5 h-3.5 text-white" />}
-                        {sort === 'date-desc' && <ArrowDown      className="w-3.5 h-3.5 text-white" />}
-                        {sort === 'alpha'     && <ArrowDownAZ    className="w-3.5 h-3.5 text-white" />}
-                      </button>
+                      <SortPicker stage={stage} sort={sort} onSelect={(v) => setSort(stage, v)} />
                       <ColorPicker stage={stage} currentColor={color} onSelect={(c) => updateColor(stage, c)} />
                     </div>
                   </div>
