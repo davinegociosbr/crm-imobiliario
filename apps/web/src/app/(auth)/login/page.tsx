@@ -36,57 +36,61 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-8">
-      <div className="flex flex-col items-center mb-8">
+    <div className="flex flex-col items-center gap-6">
+      {/* Logo diretamente no fundo azul, sem card */}
+      <div className="flex flex-col items-center">
         <Image
           src="/logo-brolezi.png"
           alt="Brolezi Negócios Imobiliários"
-          width={160}
-          height={160}
-          className="rounded-2xl mb-4"
+          width={140}
+          height={140}
+          className="object-contain"
+          style={{ filter: 'drop-shadow(0 4px 24px rgba(0,0,0,0.4))' }}
           priority
         />
-        <p className="text-sm text-slate-500">Acesse sua conta</p>
+        <p className="text-blue-200/70 text-sm mt-2 tracking-wide">Acesse sua conta</p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">E-mail</label>
-          <input
-            {...register('email')}
-            type="email"
-            placeholder="seu@email.com"
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-800 dark:border-slate-600 dark:text-white"
-          />
-          {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Senha</label>
-          <div className="relative">
+      {/* Card apenas do formulário */}
+      <div className="w-full bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl shadow-2xl p-8">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-blue-100 mb-1">E-mail</label>
             <input
-              {...register('password')}
-              type={showPass ? 'text' : 'password'}
-              placeholder="••••••••"
-              className="w-full px-3 py-2 pr-10 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-800 dark:border-slate-600 dark:text-white"
+              {...register('email')}
+              type="email"
+              placeholder="seu@email.com"
+              className="w-full px-3 py-2 border border-white/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white/10 text-white placeholder-blue-300/50"
             />
-            <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-2.5 text-slate-400">
-              {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
+            {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email.message}</p>}
           </div>
-          {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
-        </div>
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
-        >
-          {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-          {isSubmitting ? 'Entrando...' : 'Entrar'}
-        </button>
-      </form>
+          <div>
+            <label className="block text-sm font-medium text-blue-100 mb-1">Senha</label>
+            <div className="relative">
+              <input
+                {...register('password')}
+                type={showPass ? 'text' : 'password'}
+                placeholder="••••••••"
+                className="w-full px-3 py-2 pr-10 border border-white/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white/10 text-white placeholder-blue-300/50"
+              />
+              <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-2.5 text-blue-300/70 hover:text-white transition-colors">
+                {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password.message}</p>}
+          </div>
 
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full bg-blue-500 hover:bg-blue-400 text-white font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-60 shadow-lg shadow-blue-900/50"
+          >
+            {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+            {isSubmitting ? 'Entrando...' : 'Entrar'}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
