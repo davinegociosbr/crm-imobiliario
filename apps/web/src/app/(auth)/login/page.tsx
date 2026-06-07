@@ -42,10 +42,10 @@ export default function LoginPage() {
       {/* Área da logo — mesma cor, sem borda visível */}
       <div className="flex flex-col items-center pt-8 pb-2">
         <Image
-          src="/logo-brolezi.png"
+          src="/logo-brolezi-white.png"
           alt="Brolezi Negócios Imobiliários"
-          width={150}
-          height={150}
+          width={130}
+          height={130}
           className="object-contain"
           priority
         />
