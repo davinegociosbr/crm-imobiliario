@@ -1,6 +1,6 @@
 'use client';
 import { usePathname, useRouter } from 'next/navigation';
-import { Bell, Moon, Sun, Search, Phone, AlertCircle, Calendar, X } from 'lucide-react';
+import { Bell, Moon, Sun, Search, Phone, AlertCircle, Calendar, X, RotateCw } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
@@ -30,6 +30,7 @@ export function Header() {
   const { theme, setTheme } = useTheme();
   const { user } = useAuthStore();
   const [showReminders, setShowReminders] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const bellRef = useRef<HTMLDivElement>(null);
 
   const title = Object.entries(titles).find(([k]) => pathname.startsWith(k))?.[1] || 'CRM';
@@ -67,6 +68,19 @@ export function Header() {
             className="pl-9 pr-4 py-1.5 text-sm bg-slate-100 dark:bg-slate-800 rounded-lg border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 w-48"
           />
         </div>
+
+        {/* Botão atualizar */}
+        <button
+          onClick={() => {
+            setRefreshing(true);
+            router.refresh();
+            setTimeout(() => setRefreshing(false), 1000);
+          }}
+          className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          title="Atualizar página"
+        >
+          <RotateCw className={`w-4 h-4 transition-transform duration-700 ${refreshing ? 'animate-spin' : ''}`} />
+        </button>
 
         <button
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
