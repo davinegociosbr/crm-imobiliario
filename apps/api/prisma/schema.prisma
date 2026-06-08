@@ -159,6 +159,7 @@ model Company {
   website     String?
   isActive    Boolean  @default(true)
   plan        String   @default("starter")
+  settings    Json     @default("{}")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

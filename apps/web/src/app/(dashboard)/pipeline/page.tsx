@@ -839,6 +839,13 @@ export default function PipelinePage() {
     queryFn: () => api.get('/pipeline/kanban').then((r) => r.data),
   });
 
+  const { data: company } = useQuery({
+    queryKey: ['company'],
+    queryFn: () => api.get('/company').then(r => r.data),
+  });
+  const hiddenStages: string[] = (company?.settings as any)?.hiddenPipelineStages || [];
+  const visibleStages = STAGES.filter(s => !hiddenStages.includes(s));
+
   const moveMutation = useMutation({
     mutationFn: ({ leadId, stage }: { leadId: string; stage: string }) =>
       api.put(`/pipeline/${leadId}/move`, { stage }),
@@ -893,7 +900,7 @@ export default function PipelinePage() {
 
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="flex gap-4 flex-1 overflow-x-auto pb-4">
-          {STAGES.map((stage) => {
+          {visibleStages.map((stage) => {
             const stageInfo = PIPELINE_STAGES[stage];
             const color = stageColors[stage] || stageInfo.color;
             const sort = columnSorts[stage];

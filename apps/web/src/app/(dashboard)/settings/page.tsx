@@ -5,7 +5,8 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
-import { UserPlus, Download, FileJson, FileText, Loader2, Mail, Puzzle, Chrome, CheckCircle2, AlertCircle } from 'lucide-react';
+import { UserPlus, Download, FileJson, FileText, Loader2, Mail, Puzzle, Chrome, CheckCircle2, AlertCircle, Kanban, Eye, EyeOff } from 'lucide-react';
+import { PIPELINE_STAGES } from '@/lib/utils';
 
 const ROLE_LABELS: Record<string, string> = { ADMIN: 'Administrador', MANAGER: 'Gerente', BROKER: 'Corretor' };
 const ROLE_COLORS: Record<string, string> = { ADMIN: 'bg-purple-100 text-purple-700', MANAGER: 'bg-blue-100 text-blue-700', BROKER: 'bg-green-100 text-green-700' };
@@ -46,6 +47,7 @@ export default function SettingsPage() {
           { id: 'users', label: 'Usuários' },
           { id: 'backup', label: 'Backup' },
           { id: 'extension', label: 'Extensão' },
+          { id: 'pipeline', label: 'Funil' },
           { id: 'audit', label: 'Auditoria' },
         ].map((t) => (
           <button key={t.id} onClick={() => setTab(t.id)} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === t.id ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}>{t.label}</button>
@@ -141,7 +143,103 @@ export default function SettingsPage() {
 
       {tab === 'extension' && <ExtensionTab />}
 
+      {tab === 'pipeline' && <PipelineTab company={company} onSaved={() => qc.invalidateQueries({ queryKey: ['company'] })} />}
+
       {tab === 'audit' && <AuditTab />}
+    </div>
+  );
+}
+
+function PipelineTab({ company, onSaved }: { company: any; onSaved: () => void }) {
+  const settings = (company?.settings || {}) as any;
+  const hiddenStages: string[] = settings.hiddenPipelineStages || [];
+  const [saving, setSaving] = useState(false);
+  const [localHidden, setLocalHidden] = useState<string[]>(hiddenStages);
+
+  // Sync when company data loads
+  useState(() => { setLocalHidden(hiddenStages); });
+
+  const toggle = (stage: string) => {
+    setLocalHidden(prev =>
+      prev.includes(stage) ? prev.filter(s => s !== stage) : [...prev, stage]
+    );
+  };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await api.put('/company', {
+        settings: { ...settings, hiddenPipelineStages: localHidden },
+      });
+      onSaved();
+      toast.success('Configurações do funil salvas!');
+    } catch {
+      toast.error('Erro ao salvar');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const stageKeys = Object.keys(PIPELINE_STAGES) as (keyof typeof PIPELINE_STAGES)[];
+
+  return (
+    <div className="bg-white dark:bg-slate-900 rounded-xl border p-6 max-w-2xl">
+      <div className="flex items-center gap-3 mb-2">
+        <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-950/30">
+          <Kanban className="w-5 h-5 text-blue-600" />
+        </div>
+        <div>
+          <h2 className="font-semibold text-slate-800 dark:text-white">Colunas do Funil de Vendas</h2>
+          <p className="text-sm text-slate-500">Oculte colunas que não usa para deixar o funil mais limpo.</p>
+        </div>
+      </div>
+
+      <div className="mt-5 space-y-2">
+        {stageKeys.map((stage) => {
+          const info = PIPELINE_STAGES[stage];
+          const hidden = localHidden.includes(stage);
+          return (
+            <div
+              key={stage}
+              className={`flex items-center justify-between p-3 rounded-xl border transition-colors ${hidden ? 'bg-slate-50 dark:bg-slate-800/30 border-slate-200 dark:border-slate-700 opacity-60' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-3 h-3 rounded-full ${info.color}`} />
+                <span className={`text-sm font-medium ${hidden ? 'text-slate-400 line-through' : 'text-slate-700 dark:text-white'}`}>
+                  {info.label}
+                </span>
+                {hidden && <span className="text-xs text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full">Oculta</span>}
+              </div>
+              <button
+                onClick={() => toggle(stage)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  hidden
+                    ? 'bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-950/30 dark:hover:bg-blue-950/50'
+                    : 'bg-slate-100 text-slate-600 hover:bg-red-50 hover:text-red-600 dark:bg-slate-700 dark:text-slate-300'
+                }`}
+              >
+                {hidden ? <><Eye className="w-3.5 h-3.5" /> Mostrar</> : <><EyeOff className="w-3.5 h-3.5" /> Ocultar</>}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-5 flex items-center justify-between">
+        <p className="text-xs text-slate-400">
+          {localHidden.length === 0
+            ? 'Todas as colunas estão visíveis'
+            : `${localHidden.length} coluna${localHidden.length > 1 ? 's' : ''} oculta${localHidden.length > 1 ? 's' : ''}`}
+        </p>
+        <button
+          onClick={save}
+          disabled={saving}
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-medium disabled:opacity-60 transition-colors"
+        >
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+          {saving ? 'Salvando...' : 'Salvar'}
+        </button>
+      </div>
     </div>
   );
 }
