@@ -843,8 +843,24 @@ export default function PipelinePage() {
     queryKey: ['company'],
     queryFn: () => api.get('/company').then(r => r.data),
   });
-  const hiddenStages: string[] = (company?.settings as any)?.hiddenPipelineStages || [];
-  const visibleStages = STAGES.filter(s => !hiddenStages.includes(s));
+  const companySettings = (company?.settings || {}) as any;
+  const deletedStages: string[] = companySettings.deletedPipelineStages || [];
+  const customStages: { key: string; label: string; color: string }[] = companySettings.customPipelineStages || [];
+  const stageLabels: Record<string, string> = companySettings.stageLabels || {};
+
+  // Build visible stages: defaults (not deleted) + custom
+  const visibleStages = [
+    ...STAGES.filter(s => !deletedStages.includes(s)),
+    ...customStages.map(c => c.key as typeof STAGES[number]),
+  ];
+
+  // Build stage info (label + color) combining defaults and custom
+  const allStageInfo: Record<string, { label: string; color: string }> = {
+    ...Object.fromEntries(
+      Object.entries(PIPELINE_STAGES).map(([k, v]) => [k, { label: stageLabels[k] || v.label, color: v.color }])
+    ),
+    ...Object.fromEntries(customStages.map(c => [c.key, { label: c.label, color: c.color }])),
+  };
 
   const moveMutation = useMutation({
     mutationFn: ({ leadId, stage }: { leadId: string; stage: string }) =>
@@ -901,7 +917,7 @@ export default function PipelinePage() {
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="flex gap-4 flex-1 overflow-x-auto pb-4">
           {visibleStages.map((stage) => {
-            const stageInfo = PIPELINE_STAGES[stage];
+            const stageInfo = allStageInfo[stage] || { label: stage, color: 'bg-slate-500' };
             const color = stageColors[stage] || stageInfo.color;
             const sort = columnSorts[stage];
             const leads = (kanban?.[stage] || [])

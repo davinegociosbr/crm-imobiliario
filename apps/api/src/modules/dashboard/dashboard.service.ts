@@ -137,7 +137,7 @@ export class DashboardService {
       stages.map(async (stage) => ({
         stage,
         label: labels[stage],
-        count: await this.prisma.lead.count({ where: { companyId, pipelineStage: stage as any, status: { notIn: ['WON', 'LOST'] } } }),
+        count: await this.prisma.lead.count({ where: { companyId, pipelineStage: stage, status: { notIn: ['WON', 'LOST'] } } }),
       })),
     );
   }
@@ -184,7 +184,7 @@ export class DashboardService {
         stage,
         label: labels[stage],
         // Exclui leads LOST/WON para mostrar apenas quem está ativo no funil
-        count: await this.prisma.lead.count({ where: { companyId, pipelineStage: stage as any, status: { notIn: ['WON', 'LOST'] } } }),
+        count: await this.prisma.lead.count({ where: { companyId, pipelineStage: stage, status: { notIn: ['WON', 'LOST'] } } }),
       })),
     );
   }

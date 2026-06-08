@@ -224,7 +224,7 @@ model Lead {
   notes           String?
   status          LeadStatus    @default(NEW)
   origin          LeadOrigin    @default(OTHER)
-  pipelineStage   PipelineStage @default(INITIAL_CONTACT)
+  pipelineStage   String        @default("INITIAL_CONTACT")
   nextAction      String?
   nextContactAt   DateTime?
   lostReason      String?

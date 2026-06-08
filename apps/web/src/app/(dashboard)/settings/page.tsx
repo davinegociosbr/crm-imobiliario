@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
-import { UserPlus, Download, FileJson, FileText, Loader2, Mail, Puzzle, Chrome, CheckCircle2, AlertCircle, Kanban, Eye, EyeOff } from 'lucide-react';
+import { UserPlus, Download, FileJson, FileText, Loader2, Mail, Puzzle, Chrome, CheckCircle2, AlertCircle, Kanban, Trash2, Pencil, Plus, Check, GripVertical } from 'lucide-react';
 import { PIPELINE_STAGES } from '@/lib/utils';
 
 const ROLE_LABELS: Record<string, string> = { ADMIN: 'Administrador', MANAGER: 'Gerente', BROKER: 'Corretor' };
@@ -150,29 +150,83 @@ export default function SettingsPage() {
   );
 }
 
+const COLOR_OPTIONS = [
+  { label: 'Cinza',    value: 'bg-slate-500',  hex: '#64748b' },
+  { label: 'Roxo',     value: 'bg-purple-500', hex: '#a855f7' },
+  { label: 'Azul',     value: 'bg-blue-500',   hex: '#3b82f6' },
+  { label: 'Ciano',    value: 'bg-cyan-500',   hex: '#06b6d4' },
+  { label: 'Âmbar',   value: 'bg-amber-500',  hex: '#f59e0b' },
+  { label: 'Verde',    value: 'bg-green-500',  hex: '#22c55e' },
+  { label: 'Vermelho', value: 'bg-red-400',    hex: '#f87171' },
+  { label: 'Rosa',     value: 'bg-pink-500',   hex: '#ec4899' },
+  { label: 'Laranja',  value: 'bg-orange-500', hex: '#f97316' },
+  { label: 'Índigo',   value: 'bg-indigo-500', hex: '#6366f1' },
+];
+
+type StageItem = { key: string; label: string; color: string; isDefault?: boolean };
+
 function PipelineTab({ company, onSaved }: { company: any; onSaved: () => void }) {
   const settings = (company?.settings || {}) as any;
-  const hiddenStages: string[] = settings.hiddenPipelineStages || [];
+  const deletedStages: string[] = settings.deletedPipelineStages || [];
+  const customStages: StageItem[] = settings.customPipelineStages || [];
+  const stageLabels: Record<string, string> = settings.stageLabels || {};
+
+  // Build full list: defaults (not deleted) + custom
+  const defaultStages: StageItem[] = Object.entries(PIPELINE_STAGES)
+    .filter(([key]) => !deletedStages.includes(key))
+    .map(([key, info]) => ({ key, label: stageLabels[key] || info.label, color: info.color, isDefault: true }));
+
+  const [stages, setStages] = useState<StageItem[]>([...defaultStages, ...customStages]);
+  const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [editLabel, setEditLabel] = useState('');
+  const [newLabel, setNewLabel] = useState('');
+  const [newColor, setNewColor] = useState('bg-blue-500');
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [localHidden, setLocalHidden] = useState<string[]>(hiddenStages);
 
-  // Sync when company data loads
-  useState(() => { setLocalHidden(hiddenStages); });
+  const startEdit = (stage: StageItem) => { setEditingKey(stage.key); setEditLabel(stage.label); };
+  const confirmEdit = (key: string) => {
+    setStages(prev => prev.map(s => s.key === key ? { ...s, label: editLabel } : s));
+    setEditingKey(null);
+  };
 
-  const toggle = (stage: string) => {
-    setLocalHidden(prev =>
-      prev.includes(stage) ? prev.filter(s => s !== stage) : [...prev, stage]
-    );
+  const deleteStage = (key: string) => {
+    setStages(prev => prev.filter(s => s.key !== key));
+    setConfirmDelete(null);
+  };
+
+  const addStage = () => {
+    if (!newLabel.trim()) return;
+    const key = 'CUSTOM_' + Date.now();
+    setStages(prev => [...prev, { key, label: newLabel.trim(), color: newColor }]);
+    setNewLabel('');
+    setNewColor('bg-blue-500');
+    setShowAddForm(false);
   };
 
   const save = async () => {
     setSaving(true);
     try {
+      const defaultKeys = Object.keys(PIPELINE_STAGES);
+      const newDeleted = defaultKeys.filter(k => !stages.find(s => s.key === k));
+      const newCustom = stages.filter(s => !s.isDefault);
+      const newLabels: Record<string, string> = {};
+      stages.filter(s => s.isDefault).forEach(s => {
+        const orig = PIPELINE_STAGES[s.key as keyof typeof PIPELINE_STAGES]?.label;
+        if (s.label !== orig) newLabels[s.key] = s.label;
+      });
+
       await api.put('/company', {
-        settings: { ...settings, hiddenPipelineStages: localHidden },
+        settings: {
+          ...settings,
+          deletedPipelineStages: newDeleted,
+          customPipelineStages: newCustom,
+          stageLabels: newLabels,
+        },
       });
       onSaved();
-      toast.success('Configurações do funil salvas!');
+      toast.success('Colunas do funil salvas!');
     } catch {
       toast.error('Erro ao salvar');
     } finally {
@@ -180,63 +234,131 @@ function PipelineTab({ company, onSaved }: { company: any; onSaved: () => void }
     }
   };
 
-  const stageKeys = Object.keys(PIPELINE_STAGES) as (keyof typeof PIPELINE_STAGES)[];
-
   return (
     <div className="bg-white dark:bg-slate-900 rounded-xl border p-6 max-w-2xl">
-      <div className="flex items-center gap-3 mb-2">
-        <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-950/30">
-          <Kanban className="w-5 h-5 text-blue-600" />
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-950/30">
+            <Kanban className="w-5 h-5 text-blue-600" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-slate-800 dark:text-white">Colunas do Funil de Vendas</h2>
+            <p className="text-sm text-slate-500">Renomeie, exclua ou crie novas colunas.</p>
+          </div>
         </div>
-        <div>
-          <h2 className="font-semibold text-slate-800 dark:text-white">Colunas do Funil de Vendas</h2>
-          <p className="text-sm text-slate-500">Oculte colunas que não usa para deixar o funil mais limpo.</p>
-        </div>
+        <button
+          onClick={() => setShowAddForm(v => !v)}
+          className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+        >
+          <Plus className="w-4 h-4" /> Nova coluna
+        </button>
       </div>
 
-      <div className="mt-5 space-y-2">
-        {stageKeys.map((stage) => {
-          const info = PIPELINE_STAGES[stage];
-          const hidden = localHidden.includes(stage);
-          return (
-            <div
-              key={stage}
-              className={`flex items-center justify-between p-3 rounded-xl border transition-colors ${hidden ? 'bg-slate-50 dark:bg-slate-800/30 border-slate-200 dark:border-slate-700 opacity-60' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}
-            >
-              <div className="flex items-center gap-3">
-                <div className={`w-3 h-3 rounded-full ${info.color}`} />
-                <span className={`text-sm font-medium ${hidden ? 'text-slate-400 line-through' : 'text-slate-700 dark:text-white'}`}>
-                  {info.label}
-                </span>
-                {hidden && <span className="text-xs text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full">Oculta</span>}
-              </div>
+      {/* Formulário nova coluna */}
+      {showAddForm && (
+        <div className="mb-4 p-4 rounded-xl border-2 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/20 space-y-3">
+          <p className="text-sm font-medium text-blue-800 dark:text-blue-300">Nova coluna</p>
+          <div className="flex gap-2">
+            <input
+              value={newLabel}
+              onChange={e => setNewLabel(e.target.value)}
+              placeholder="Nome da coluna..."
+              className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-800 dark:border-slate-600 dark:text-white"
+              onKeyDown={e => e.key === 'Enter' && addStage()}
+              autoFocus
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {COLOR_OPTIONS.map(c => (
               <button
-                onClick={() => toggle(stage)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                  hidden
-                    ? 'bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-950/30 dark:hover:bg-blue-950/50'
-                    : 'bg-slate-100 text-slate-600 hover:bg-red-50 hover:text-red-600 dark:bg-slate-700 dark:text-slate-300'
-                }`}
-              >
-                {hidden ? <><Eye className="w-3.5 h-3.5" /> Mostrar</> : <><EyeOff className="w-3.5 h-3.5" /> Ocultar</>}
-              </button>
-            </div>
-          );
-        })}
+                key={c.value}
+                onClick={() => setNewColor(c.value)}
+                title={c.label}
+                className={`w-6 h-6 rounded-full transition-transform ${newColor === c.value ? 'ring-2 ring-offset-2 ring-blue-500 scale-110' : 'hover:scale-110'}`}
+                style={{ backgroundColor: c.hex }}
+              />
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <button onClick={addStage} className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium">
+              <Plus className="w-3.5 h-3.5" /> Adicionar
+            </button>
+            <button onClick={() => setShowAddForm(false)} className="px-4 py-2 border rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Lista de colunas */}
+      <div className="space-y-2">
+        {stages.map((stage) => (
+          <div key={stage.key} className="flex items-center gap-3 p-3 rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+            <GripVertical className="w-4 h-4 text-slate-300 shrink-0" />
+            <div className={`w-3 h-3 rounded-full shrink-0 ${stage.color}`} />
+
+            {editingKey === stage.key ? (
+              <div className="flex flex-1 items-center gap-2">
+                <input
+                  value={editLabel}
+                  onChange={e => setEditLabel(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') confirmEdit(stage.key); if (e.key === 'Escape') setEditingKey(null); }}
+                  className="flex-1 px-2 py-1 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                  autoFocus
+                />
+                <button onClick={() => confirmEdit(stage.key)} className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-950/30 rounded-lg">
+                  <Check className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <span className="flex-1 text-sm font-medium text-slate-700 dark:text-white">
+                {stage.label}
+                {!stage.isDefault && <span className="ml-2 text-xs text-blue-500 bg-blue-50 dark:bg-blue-950/30 px-1.5 py-0.5 rounded-full">personalizada</span>}
+              </span>
+            )}
+
+            {editingKey !== stage.key && (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => startEdit(stage)}
+                  className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg transition-colors"
+                  title="Renomear"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+                {confirmDelete === stage.key ? (
+                  <div className="flex items-center gap-1.5 px-2 py-1 bg-red-50 dark:bg-red-950/30 rounded-lg">
+                    <span className="text-xs text-red-600">Confirmar?</span>
+                    <button onClick={() => deleteStage(stage.key)} className="text-xs font-medium text-red-600 hover:text-red-800">Sim</button>
+                    <button onClick={() => setConfirmDelete(null)} className="text-xs text-slate-500">Não</button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setConfirmDelete(stage.key)}
+                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
+                    title="Excluir coluna"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
+
+      {stages.length === 0 && (
+        <p className="text-center text-sm text-slate-400 py-6">Nenhuma coluna. Adicione uma nova coluna acima.</p>
+      )}
 
       <div className="mt-5 flex items-center justify-between">
-        <p className="text-xs text-slate-400">
-          {localHidden.length === 0
-            ? 'Todas as colunas estão visíveis'
-            : `${localHidden.length} coluna${localHidden.length > 1 ? 's' : ''} oculta${localHidden.length > 1 ? 's' : ''}`}
-        </p>
+        <p className="text-xs text-slate-400">{stages.length} coluna{stages.length !== 1 ? 's' : ''} no funil</p>
         <button
           onClick={save}
           disabled={saving}
           className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-medium disabled:opacity-60 transition-colors"
         >
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+          {saving && <Loader2 className="w-4 h-4 animate-spin" />}
           {saving ? 'Salvando...' : 'Salvar'}
         </button>
       </div>

@@ -40,7 +40,7 @@ export class PipelineService {
     });
   }
 
-  async moveCard(leadId: string, companyId: string, stage: any, userId: string) {
+  async moveCard(leadId: string, companyId: string, stage: string, userId: string) {
     const lead = await this.prisma.lead.findFirst({ where: { id: leadId, companyId } });
     if (!lead) return null;
 

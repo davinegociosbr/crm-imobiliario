@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { LeadStatus, LeadOrigin, PipelineStage } from '@prisma/client';
+import { LeadStatus, LeadOrigin } from '@prisma/client';
 
 export class CreateLeadDto {
   name: string;
@@ -24,7 +24,7 @@ export class CreateLeadDto {
 
 export class UpdateLeadDto extends CreateLeadDto {
   status?: LeadStatus;
-  pipelineStage?: PipelineStage;
+  pipelineStage?: string;
   nextAction?: string;
   nextContactAt?: Date;
   lostReason?: string;
@@ -161,7 +161,7 @@ export class LeadsService {
     });
   }
 
-  async updatePipelineStage(id: string, companyId: string, stage: PipelineStage, userId: string) {
+  async updatestring(id: string, companyId: string, stage: string, userId: string) {
     const lead = await this.findOne(id, companyId);
 
     await this.prisma.activity.create({
