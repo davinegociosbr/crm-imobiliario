@@ -161,7 +161,7 @@ export class LeadsService {
     });
   }
 
-  async updatestring(id: string, companyId: string, stage: string, userId: string) {
+  async updatePipelineStage(id: string, companyId: string, stage: string, userId: string) {
     const lead = await this.findOne(id, companyId);
 
     await this.prisma.activity.create({
