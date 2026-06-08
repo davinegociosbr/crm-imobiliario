@@ -254,19 +254,33 @@ export default function LeadsPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <a href={`tel:${lead.phone}`} className="p-1.5 rounded hover:bg-blue-50 text-blue-600">
-                          <Phone className="w-3.5 h-3.5" />
-                        </a>
-                        {lead.whatsapp && (
-                          <a href={`https://web.whatsapp.com/send?phone=55${lead.whatsapp.replace(/\D/g, '')}`} target="whatsapp_web" className="p-1.5 rounded hover:bg-green-50 text-green-600">
-                            <MessageCircle className="w-3.5 h-3.5" />
+                      <div className="flex flex-col gap-1">
+                        {lead.phone && (
+                          <a href={`tel:${lead.phone}`} className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                            <Phone className="w-3 h-3 shrink-0 text-blue-500" />
+                            {lead.phone}
+                          </a>
+                        )}
+                        {lead.whatsapp && lead.whatsapp !== lead.phone && (
+                          <a href={`https://web.whatsapp.com/send?phone=55${lead.whatsapp.replace(/\D/g, '')}`} target="whatsapp_web" className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 hover:text-green-600 dark:hover:text-green-400 transition-colors">
+                            <MessageCircle className="w-3 h-3 shrink-0 text-green-500" />
+                            {lead.whatsapp}
+                          </a>
+                        )}
+                        {!lead.phone && lead.whatsapp && (
+                          <a href={`https://web.whatsapp.com/send?phone=55${lead.whatsapp.replace(/\D/g, '')}`} target="whatsapp_web" className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 hover:text-green-600 dark:hover:text-green-400 transition-colors">
+                            <MessageCircle className="w-3 h-3 shrink-0 text-green-500" />
+                            {lead.whatsapp}
                           </a>
                         )}
                         {lead.email && (
-                          <a href={`mailto:${lead.email}`} className="p-1.5 rounded hover:bg-slate-50 text-slate-600">
-                            <Mail className="w-3.5 h-3.5" />
+                          <a href={`mailto:${lead.email}`} className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 transition-colors truncate max-w-[160px]">
+                            <Mail className="w-3 h-3 shrink-0" />
+                            {lead.email}
                           </a>
+                        )}
+                        {!lead.phone && !lead.whatsapp && !lead.email && (
+                          <span className="text-xs text-slate-400">-</span>
                         )}
                       </div>
                     </td>
