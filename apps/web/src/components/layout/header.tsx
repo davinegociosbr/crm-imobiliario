@@ -2,7 +2,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { Bell, Moon, Sun, Search, Phone, AlertCircle, Calendar, X, RotateCw } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '@/store/auth.store';
 import { getInitials, PIPELINE_STAGES } from '@/lib/utils';
@@ -29,6 +29,7 @@ export function Header() {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const { user } = useAuthStore();
+  const queryClient = useQueryClient();
   const [showReminders, setShowReminders] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const bellRef = useRef<HTMLDivElement>(null);
@@ -71,10 +72,11 @@ export function Header() {
 
         {/* Botão atualizar */}
         <button
-          onClick={() => {
+          onClick={async () => {
             setRefreshing(true);
-            router.refresh();
-            setTimeout(() => setRefreshing(false), 1000);
+            // Invalida TODOS os dados do React Query — força rebusca em toda a página
+            await queryClient.invalidateQueries();
+            setTimeout(() => setRefreshing(false), 800);
           }}
           className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           title="Atualizar página"
