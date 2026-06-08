@@ -118,12 +118,19 @@ export class LeadsService {
   async create(companyId: string, userId: string, dto: CreateLeadDto) {
     const data = this.sanitize(dto);
 
-    // Verifica duplicata por telefone (mesmo número já cadastrado na empresa)
+    // Verifica duplicata por telefone — compara últimos 9 dígitos para ignorar variações de DDI/DDD
     const phone = (data.phone || '').replace(/\D/g, '');
-    if (phone) {
-      const existing = await this.prisma.lead.findFirst({
-        where: { companyId, phone: { contains: phone } },
-        select: { id: true, name: true },
+    if (phone && phone.length >= 8) {
+      const suffix = phone.slice(-9);
+      const allLeads = await this.prisma.lead.findMany({
+        where: { companyId },
+        select: { id: true, name: true, phone: true, whatsapp: true },
+      });
+      const existing = allLeads.find(l => {
+        const p1 = (l.phone || '').replace(/\D/g, '');
+        const p2 = (l.whatsapp || '').replace(/\D/g, '');
+        return (p1.length >= 8 && p1.slice(-9) === suffix) ||
+               (p2.length >= 8 && p2.slice(-9) === suffix);
       });
       if (existing) {
         throw new ConflictException(`Já existe um lead com este telefone: ${existing.name}`);
