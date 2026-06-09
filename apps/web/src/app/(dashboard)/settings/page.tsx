@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
 import { UserPlus, Download, FileJson, FileText, Loader2, Mail, Puzzle, Chrome, CheckCircle2, AlertCircle, Kanban, Trash2, Pencil, Plus, Check, GripVertical } from 'lucide-react';
 import { PIPELINE_STAGES } from '@/lib/utils';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 
 const ROLE_LABELS: Record<string, string> = { ADMIN: 'Administrador', MANAGER: 'Gerente', BROKER: 'Corretor' };
 const ROLE_COLORS: Record<string, string> = { ADMIN: 'bg-purple-100 text-purple-700', MANAGER: 'bg-blue-100 text-blue-700', BROKER: 'bg-green-100 text-green-700' };
@@ -223,6 +224,7 @@ function PipelineTab({ company, onSaved }: { company: any; onSaved: () => void }
           deletedPipelineStages: newDeleted,
           customPipelineStages: newCustom,
           stageLabels: newLabels,
+          stageOrder: stages.map(s => s.key),
         },
       });
       onSaved();
@@ -290,62 +292,85 @@ function PipelineTab({ company, onSaved }: { company: any; onSaved: () => void }
         </div>
       )}
 
-      {/* Lista de colunas */}
-      <div className="space-y-2">
-        {stages.map((stage) => (
-          <div key={stage.key} className="flex items-center gap-3 p-3 rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-            <GripVertical className="w-4 h-4 text-slate-300 shrink-0" />
-            <div className={`w-3 h-3 rounded-full shrink-0 ${stage.color}`} />
+      {/* Lista de colunas com drag and drop */}
+      <DragDropContext onDragEnd={(result: DropResult) => {
+        if (!result.destination) return;
+        const reordered = Array.from(stages);
+        const [removed] = reordered.splice(result.source.index, 1);
+        reordered.splice(result.destination.index, 0, removed);
+        setStages(reordered);
+      }}>
+        <Droppable droppableId="pipeline-stages">
+          {(provided) => (
+            <div className="space-y-2" ref={provided.innerRef} {...provided.droppableProps}>
+              {stages.map((stage, index) => (
+                <Draggable key={stage.key} draggableId={stage.key} index={index}>
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      className={`flex items-center gap-3 p-3 rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 transition-shadow ${snapshot.isDragging ? 'shadow-lg ring-2 ring-blue-400' : ''}`}
+                    >
+                      <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing p-1 -m-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700" title="Arrastar para reordenar">
+                        <GripVertical className="w-4 h-4 text-slate-400" />
+                      </div>
+                      <div className={`w-3 h-3 rounded-full shrink-0 ${stage.color}`} />
 
-            {editingKey === stage.key ? (
-              <div className="flex flex-1 items-center gap-2">
-                <input
-                  value={editLabel}
-                  onChange={e => setEditLabel(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') confirmEdit(stage.key); if (e.key === 'Escape') setEditingKey(null); }}
-                  className="flex-1 px-2 py-1 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                  autoFocus
-                />
-                <button onClick={() => confirmEdit(stage.key)} className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-950/30 rounded-lg">
-                  <Check className="w-4 h-4" />
-                </button>
-              </div>
-            ) : (
-              <span className="flex-1 text-sm font-medium text-slate-700 dark:text-white">
-                {stage.label}
-                {!stage.isDefault && <span className="ml-2 text-xs text-blue-500 bg-blue-50 dark:bg-blue-950/30 px-1.5 py-0.5 rounded-full">personalizada</span>}
-              </span>
-            )}
+                      {editingKey === stage.key ? (
+                        <div className="flex flex-1 items-center gap-2">
+                          <input
+                            value={editLabel}
+                            onChange={e => setEditLabel(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter') confirmEdit(stage.key); if (e.key === 'Escape') setEditingKey(null); }}
+                            className="flex-1 px-2 py-1 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                            autoFocus
+                          />
+                          <button onClick={() => confirmEdit(stage.key)} className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-950/30 rounded-lg">
+                            <Check className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="flex-1 text-sm font-medium text-slate-700 dark:text-white">
+                          {stage.label}
+                          {!stage.isDefault && <span className="ml-2 text-xs text-blue-500 bg-blue-50 dark:bg-blue-950/30 px-1.5 py-0.5 rounded-full">personalizada</span>}
+                        </span>
+                      )}
 
-            {editingKey !== stage.key && (
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => startEdit(stage)}
-                  className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg transition-colors"
-                  title="Renomear"
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                </button>
-                {confirmDelete === stage.key ? (
-                  <div className="flex items-center gap-1.5 px-2 py-1 bg-red-50 dark:bg-red-950/30 rounded-lg">
-                    <span className="text-xs text-red-600">Confirmar?</span>
-                    <button onClick={() => deleteStage(stage.key)} className="text-xs font-medium text-red-600 hover:text-red-800">Sim</button>
-                    <button onClick={() => setConfirmDelete(null)} className="text-xs text-slate-500">Não</button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setConfirmDelete(stage.key)}
-                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
-                    title="Excluir coluna"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+                      {editingKey !== stage.key && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => startEdit(stage)}
+                            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg transition-colors"
+                            title="Renomear"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          {confirmDelete === stage.key ? (
+                            <div className="flex items-center gap-1.5 px-2 py-1 bg-red-50 dark:bg-red-950/30 rounded-lg">
+                              <span className="text-xs text-red-600">Confirmar?</span>
+                              <button onClick={() => deleteStage(stage.key)} className="text-xs font-medium text-red-600 hover:text-red-800">Sim</button>
+                              <button onClick={() => setConfirmDelete(null)} className="text-xs text-slate-500">Não</button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setConfirmDelete(stage.key)}
+                              className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
+                              title="Excluir coluna"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </Draggable>
+              ))}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
 
       {stages.length === 0 && (
         <p className="text-center text-sm text-slate-400 py-6">Nenhuma coluna. Adicione uma nova coluna acima.</p>

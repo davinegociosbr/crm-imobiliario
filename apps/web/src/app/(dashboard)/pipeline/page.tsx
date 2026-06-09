@@ -847,12 +847,16 @@ export default function PipelinePage() {
   const deletedStages: string[] = companySettings.deletedPipelineStages || [];
   const customStages: { key: string; label: string; color: string }[] = companySettings.customPipelineStages || [];
   const stageLabels: Record<string, string> = companySettings.stageLabels || {};
+  const stageOrder: string[] = companySettings.stageOrder || [];
 
-  // Build visible stages: defaults (not deleted) + custom
-  const visibleStages = [
+  // Build visible stages: defaults (not deleted) + custom, respecting saved order
+  const allKeys = [
     ...STAGES.filter(s => !deletedStages.includes(s)),
-    ...customStages.map(c => c.key as typeof STAGES[number]),
+    ...customStages.map(c => c.key),
   ];
+  const visibleStages = stageOrder.length
+    ? [...stageOrder.filter(k => allKeys.includes(k)), ...allKeys.filter(k => !stageOrder.includes(k))]
+    : allKeys;
 
   // Build stage info (label + color) combining defaults and custom
   const allStageInfo: Record<string, { label: string; color: string }> = {
