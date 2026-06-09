@@ -922,7 +922,13 @@ export default function PipelinePage() {
             const sort = columnSorts[stage];
             const leads = (kanban?.[stage] || [])
               .filter((lead: any) => {
-                if (search && !lead.name?.toLowerCase().includes(search.toLowerCase()) && !lead.phone?.includes(search)) return false;
+                if (search) {
+                  const q = search.toLowerCase();
+                  const matchName     = lead.name?.toLowerCase().includes(q);
+                  const matchPhone    = lead.phone?.includes(search);
+                  const matchInterest = lead.interest?.toLowerCase().includes(q);
+                  if (!matchName && !matchPhone && !matchInterest) return false;
+                }
                 if (originFilter && lead.origin !== originFilter) return false;
                 return true;
               })
