@@ -6,7 +6,6 @@ export class PipelineService {
   constructor(private prisma: PrismaService) {}
 
   async getKanban(companyId: string, filters: any = {}) {
-    const stages = ['INITIAL_CONTACT', 'REDIRECT', 'ATTENDANCE', 'TODAY', 'FOLLOW_UP', 'CLIENTS', 'INACTIVE'];
     const where: any = {
       companyId,
       status: { notIn: ['WON', 'LOST'] },
@@ -16,17 +15,32 @@ export class PipelineService {
 
     const leads = await this.prisma.lead.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        whatsapp: true,
+        email: true,
+        interest: true,
+        pipelineStage: true,
+        nextAction: true,
+        nextContactAt: true,
+        origin: true,
+        status: true,
+        updatedAt: true,
         assignedUser: { select: { id: true, name: true, avatar: true } },
         _count: { select: { activities: true } },
       },
       orderBy: { updatedAt: 'desc' },
     });
 
+    // Agrupa por pipelineStage (inclui colunas customizadas dinamicamente)
     const kanban: Record<string, any[]> = {};
-    stages.forEach((stage) => {
-      kanban[stage] = leads.filter((l) => l.pipelineStage === stage);
-    });
+    for (const lead of leads) {
+      const stage = lead.pipelineStage || 'INITIAL_CONTACT';
+      if (!kanban[stage]) kanban[stage] = [];
+      kanban[stage].push(lead);
+    }
 
     return kanban;
   }
