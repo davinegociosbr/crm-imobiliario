@@ -594,6 +594,7 @@ function LeadCard({ lead, index, onOpen }: { lead: any; index: number; onOpen: (
   const qc = useQueryClient();
   const nextContact = lead.nextContactAt ? new Date(lead.nextContactAt) : null;
   const isOverdue = nextContact && nextContact < new Date();
+  const noDate = !nextContact;
   const [priority, setPriority] = useState<string>(lead.status === 'NEW' ? 'LOW' : 'MEDIUM');
 
   const updatePriority = useMutation({
@@ -631,13 +632,15 @@ function LeadCard({ lead, index, onOpen }: { lead: any; index: number; onOpen: (
               ? 'bg-white dark:bg-slate-800 shadow-lg ring-2 ring-blue-500 border-blue-400'
               : isOverdue
               ? 'bg-red-50 dark:bg-red-950/20 border-red-400 dark:border-red-600 shadow-red-100 dark:shadow-red-900/20 animate-pulse-border'
+              : noDate
+              ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-300 dark:border-amber-700 shadow-amber-100 dark:shadow-amber-900/20'
               : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:shadow-md'
           }`}
           onClick={() => !snapshot.isDragging && onOpen(lead)}
         >
           {/* Linha 1: Nome + data */}
           <div className="flex items-start justify-between gap-1 mb-1">
-            <p className={`font-semibold text-xs leading-tight line-clamp-1 flex-1 ${isOverdue ? 'text-red-800 dark:text-red-200' : 'text-slate-900 dark:text-white'}`}>
+            <p className={`font-semibold text-xs leading-tight line-clamp-1 flex-1 ${isOverdue ? 'text-red-800 dark:text-red-200' : noDate ? 'text-amber-900 dark:text-amber-200' : 'text-slate-900 dark:text-white'}`}>
               {lead.name}
             </p>
             {isOverdue ? (
@@ -646,8 +649,8 @@ function LeadCard({ lead, index, onOpen }: { lead: any; index: number; onOpen: (
               </span>
             ) : (
               <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded shrink-0 ${
-                !nextContact
-                  ? 'bg-slate-100 text-slate-400 dark:bg-slate-700'
+                noDate
+                  ? 'bg-amber-200 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
                   : 'bg-green-50 text-green-700 dark:bg-green-950/30'
               }`}>
                 {nextContact
