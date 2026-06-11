@@ -817,6 +817,7 @@ export default function PipelinePage() {
   const [selectedLead, setSelectedLead] = useState<any>(null);
   const [search, setSearch] = useState('');
   const [originFilter, setOriginFilter] = useState('');
+  const [mobileStage, setMobileStage] = useState<string | null>(null);
 
   // Ordenação por coluna: null = padrão, 'date-asc' = vencimento crescente, 'date-desc' = decrescente, 'alpha' = A→Z
   const [columnSorts, setColumnSorts] = useState<Record<string, 'date-asc' | 'date-desc' | 'alpha' | null>>({});
@@ -921,6 +922,37 @@ export default function PipelinePage() {
         </p>
       </div>
 
+      {/* Seletor de coluna — apenas mobile */}
+      <div className="flex md:hidden gap-1 overflow-x-auto pb-1 mb-2">
+        <button
+          onClick={() => setMobileStage(null)}
+          className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${mobileStage === null ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600'}`}
+        >
+          Todas
+        </button>
+        {visibleStages.map(stage => {
+          const info = allStageInfo[stage] || { label: stage };
+          const count = (kanban?.[stage] || []).filter((lead: any) => {
+            if (originFilter && lead.origin !== originFilter) return false;
+            if (search) {
+              const q = search.toLowerCase();
+              return lead.name?.toLowerCase().includes(q) || lead.phone?.includes(search) || lead.interest?.toLowerCase().includes(q);
+            }
+            return true;
+          }).length;
+          return (
+            <button
+              key={stage}
+              onClick={() => setMobileStage(stage)}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors flex items-center gap-1 ${mobileStage === stage ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600'}`}
+            >
+              {info.label}
+              {count > 0 && <span className={`w-4 h-4 rounded-full text-[10px] flex items-center justify-center ${mobileStage === stage ? 'bg-white/20' : 'bg-slate-300'}`}>{count}</span>}
+            </button>
+          );
+        })}
+      </div>
+
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="flex gap-4 flex-1 overflow-x-auto pb-4">
           {visibleStages.map((stage) => {
@@ -947,8 +979,9 @@ export default function PipelinePage() {
                 return sort === 'date-asc' ? da - db : db - da;
               });
 
+            const hiddenOnMobile = mobileStage !== null && mobileStage !== stage;
             return (
-              <div key={stage} className="w-72 shrink-0 flex flex-col">
+              <div key={stage} className={`shrink-0 flex flex-col w-full md:w-72 ${hiddenOnMobile ? 'hidden md:flex' : ''}`}>
                 <div className={`rounded-lg ${color} text-white mb-2`}>
                   <div className="flex items-center justify-between px-3 py-2">
                     <span className="font-medium text-sm">{stageInfo.label}</span>
