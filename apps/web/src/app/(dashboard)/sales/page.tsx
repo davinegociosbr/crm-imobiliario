@@ -24,6 +24,7 @@ function CommissionBadge({ sale }: { sale: any }) {
 }
 
 export default function SalesPage() {
+  const qc = useQueryClient();
   const [showModal, setShowModal] = useState(false);
   const [editSale, setEditSale] = useState<any>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
