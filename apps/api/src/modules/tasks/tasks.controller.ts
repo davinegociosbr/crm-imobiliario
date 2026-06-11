@@ -18,10 +18,11 @@ export class TasksController {
     @Query('priority') priority?: string,
     @Query('assignedUserId') assignedUserId?: string,
     @Query('leadId') leadId?: string,
+    @Query('search') search?: string,
     @Query('skip', new DefaultValuePipe(0), ParseIntPipe) skip?: number,
     @Query('take', new DefaultValuePipe(50), ParseIntPipe) take?: number,
   ) {
-    return this.service.findAll(user.companyId, { status, priority, assignedUserId, leadId, skip, take });
+    return this.service.findAll(user.companyId, { status, priority, assignedUserId, leadId, search, skip, take });
   }
 
   @Get('overdue')

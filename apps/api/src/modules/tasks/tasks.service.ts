@@ -11,6 +11,7 @@ export class TasksService {
     if (filters.priority) where.priority = filters.priority;
     if (filters.assignedUserId) where.assignedUserId = filters.assignedUserId;
     if (filters.leadId) where.leadId = filters.leadId;
+    if (filters.search) where.title = { contains: filters.search, mode: 'insensitive' };
 
     const [data, total] = await Promise.all([
       this.prisma.task.findMany({
