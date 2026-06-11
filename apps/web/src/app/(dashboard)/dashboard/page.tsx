@@ -84,7 +84,7 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard title="Total de Leads" value={metrics?.totalLeads || 0} icon={Users} color="bg-blue-600" sub="Leads ativos (excl. perdidos)" />
-        <MetricCard title="Leads Novos" value={metrics?.newLeads || 0} icon={ArrowUpRight} color="bg-indigo-500" sub="Criados este mês" />
+        <MetricCard title="Leads Novos" value={metrics?.newLeads || 0} icon={ArrowUpRight} color="bg-indigo-500" sub="Cadastrados, ainda sem funil" />
         <MetricCard title="No Funil" value={metrics?.inProgressLeads || 0} icon={Clock} color="bg-amber-500" sub="Negociações em andamento" />
         <MetricCard title="Taxa de Conversão" value={`${metrics?.conversionRate || 0}%`} icon={Percent} color="bg-purple-600" sub="Vendas / Total leads" />
       </div>
@@ -92,7 +92,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard title="Visitas Agendadas" value={metrics?.scheduledVisits || 0} icon={Calendar} color="bg-cyan-500" sub="Este mês" />
         <MetricCard title="Visitas Realizadas" value={metrics?.completedVisits || 0} icon={CheckCircle} color="bg-emerald-500" />
-        <MetricCard title="Vendas Realizadas" value={metrics?.totalSales || 0} icon={TrendingUp} color="bg-green-600" />
+        <MetricCard title="Vendas Realizadas" value={metrics?.totalSales || 0} icon={TrendingUp} color="bg-green-600" sub="Total acumulado" />
         <MetricCard title="Valor Vendido" value={formatCurrency(metrics?.totalSoldValue || 0)} icon={DollarSign} color="bg-green-700" sub={`Ticket médio: ${formatCurrency(metrics?.avgTicket || 0)}`} />
       </div>
 

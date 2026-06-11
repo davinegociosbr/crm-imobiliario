@@ -26,9 +26,9 @@ export class DashboardService {
         where: { companyId, status: { notIn: ['WON', 'LOST'] } },
         select: { phone: true, whatsapp: true },
       }),
-      // Leads criados no período para deduplicar por telefone
+      // Leads com status NEW (aguardando funil)
       this.prisma.lead.findMany({
-        where: { companyId, status: { notIn: ['LOST'] }, createdAt: { gte: start, lte: end } },
+        where: { companyId, status: 'NEW' },
         select: { phone: true, whatsapp: true },
       }),
       // Negócios no funil — apenas leads em atendimento (adicionados ao kanban)
@@ -39,8 +39,9 @@ export class DashboardService {
       this.prisma.visit.count({
         where: { lead: { companyId }, status: 'COMPLETED', scheduledAt: { gte: start, lte: end } },
       }),
+      // Vendas — todas (sem filtro de período) para mostrar total real
       this.prisma.sale.findMany({
-        where: { lead: { companyId }, status: 'ACTIVE', soldAt: { gte: start, lte: end } },
+        where: { lead: { companyId }, status: 'ACTIVE' },
         select: { saleValue: true, commissionValue: true },
       }),
       this.prisma.commission.findMany({
