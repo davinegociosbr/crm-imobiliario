@@ -31,8 +31,8 @@ export class DashboardService {
         where: { companyId, status: { notIn: ['LOST'] }, createdAt: { gte: start, lte: end } },
         select: { phone: true, whatsapp: true },
       }),
-      // Negócios no funil — todos os cards ativos (sem deduplicar)
-      this.prisma.lead.count({ where: { companyId, status: { notIn: ['WON', 'LOST'] } } }),
+      // Negócios no funil — apenas leads em atendimento (adicionados ao kanban)
+      this.prisma.lead.count({ where: { companyId, status: 'IN_PROGRESS' } }),
       this.prisma.visit.count({
         where: { lead: { companyId }, status: 'SCHEDULED', scheduledAt: { gte: start, lte: end } },
       }),
