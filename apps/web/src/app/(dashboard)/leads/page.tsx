@@ -102,6 +102,8 @@ export default function LeadsPage() {
   const [showModal, setShowModal] = useState(false);
   const [importing, setImporting] = useState(false);
   const [addToPipelineLead, setAddToPipelineLead] = useState<any>(null);
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 50;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,9 +129,9 @@ export default function LeadsPage() {
   };
 
   const { data, isLoading } = useQuery({
-    queryKey: ['leads', search, statusFilter],
+    queryKey: ['leads', search, statusFilter, page],
     queryFn: () =>
-      api.get('/leads', { params: { search, status: statusFilter || undefined } }).then((r) => r.data),
+      api.get('/leads', { params: { search, status: statusFilter || undefined, skip: page * PAGE_SIZE, take: PAGE_SIZE } }).then((r) => r.data),
   });
 
   const deleteMutation = useMutation({
@@ -169,14 +171,14 @@ export default function LeadsPage() {
             <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
             <input
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setPage(0); }}
               placeholder="Buscar por nome, e-mail ou telefone..."
               className="w-full pl-9 pr-4 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900"
             />
           </div>
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}
             className="py-2 px-3 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900"
           >
             <option value="">Todos os status</option>
@@ -328,6 +330,34 @@ export default function LeadsPage() {
           </table>
         </div>
       </div>
+
+      {/* Paginação */}
+      {(data?.total || 0) > PAGE_SIZE && (
+        <div className="flex items-center justify-between px-2">
+          <p className="text-sm text-slate-500">
+            Mostrando {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, data?.total || 0)} de {data?.total} leads
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(0, p - 1))}
+              disabled={page === 0}
+              className="px-3 py-1.5 text-sm border rounded-lg disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+            >
+              ← Anterior
+            </button>
+            <span className="text-sm text-slate-600 dark:text-slate-400">
+              Página {page + 1} de {Math.ceil((data?.total || 0) / PAGE_SIZE)}
+            </span>
+            <button
+              onClick={() => setPage(p => p + 1)}
+              disabled={(page + 1) * PAGE_SIZE >= (data?.total || 0)}
+              className="px-3 py-1.5 text-sm border rounded-lg disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+            >
+              Próxima →
+            </button>
+          </div>
+        </div>
+      )}
 
       {showModal && <LeadModal onClose={() => setShowModal(false)} />}
       {addToPipelineLead && <AddToPipelineModal lead={addToPipelineLead} onClose={() => setAddToPipelineLead(null)} />}
