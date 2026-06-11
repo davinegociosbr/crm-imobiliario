@@ -39,6 +39,12 @@ export default function PropertiesPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['properties'] }); toast.success('Imóvel removido'); },
   });
 
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) => api.put(`/properties/${id}/status`, { status }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['properties'] }); qc.invalidateQueries({ queryKey: ['properties-select-available'] }); toast.success('Status atualizado!'); },
+    onError: () => toast.error('Erro ao atualizar status'),
+  });
+
   const properties = data?.data || [];
 
   return (
@@ -72,9 +78,13 @@ export default function PropertiesPage() {
                   <span className="text-xs text-slate-400 font-mono">{p.code}</span>
                   <h3 className="font-semibold text-slate-800 dark:text-white text-sm leading-tight">{p.name}</h3>
                 </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[p.status]}`}>
-                  {STATUS_LABELS[p.status]}
-                </span>
+                <select
+                  value={p.status}
+                  onChange={(e) => statusMutation.mutate({ id: p.id, status: e.target.value })}
+                  className={`text-xs px-2 py-0.5 rounded-full font-medium border-0 cursor-pointer outline-none ${STATUS_COLORS[p.status]}`}
+                >
+                  {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
               </div>
               <div className="flex items-center gap-1 text-xs text-slate-500 mb-3">
                 <MapPin className="w-3 h-3" />
