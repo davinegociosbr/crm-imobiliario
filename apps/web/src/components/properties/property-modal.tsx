@@ -28,7 +28,11 @@ export function PropertyModal({ property, onClose }: { property?: any; onClose: 
 
   const mutation = useMutation({
     mutationFn: (data: any) => {
-      const payload = { ...data, price: parseBRL(priceDisplay) };
+      const intFields = ['bedrooms', 'suites', 'parkingSpots'];
+      const floatFields = ['privateArea'];
+      const payload: any = { ...data, price: parseBRL(priceDisplay) };
+      for (const f of intFields) payload[f] = payload[f] !== '' && payload[f] != null ? parseInt(payload[f], 10) : null;
+      for (const f of floatFields) payload[f] = payload[f] !== '' && payload[f] != null ? parseFloat(payload[f]) : null;
       return property ? api.put(`/properties/${property.id}`, payload) : api.post('/properties', payload);
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['properties'] }); toast.success('Imóvel salvo!'); onClose(); },
