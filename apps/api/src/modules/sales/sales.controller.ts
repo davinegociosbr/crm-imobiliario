@@ -43,4 +43,9 @@ export class SalesController {
   update(@Param('id') id: string, @CurrentUser() user: any, @Body() dto: any) {
     return this.service.update(id, user.companyId, dto);
   }
+
+  @Put(':id/commission-status')
+  updateCommissionStatus(@Param('id') id: string, @CurrentUser() user: any, @Body('status') status: string) {
+    return this.service.updateCommissionStatus(id, user.companyId, status);
+  }
 }

@@ -7,6 +7,22 @@ import { api } from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { SaleModal } from '@/components/sales/sale-modal';
 
+function CommissionBadge({ sale }: { sale: any }) {
+  const qc = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: (status: string) => api.put(`/sales/${sale.id}/commission-status`, { status }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sales'] }); toast.success('Status atualizado!'); },
+    onError: () => toast.error('Erro ao atualizar'),
+  });
+  const received = sale.commissionStatus === 'RECEIVED';
+  return (
+    <button onClick={() => mutation.mutate(received ? 'PENDING' : 'RECEIVED')}
+      className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${received ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'}`}>
+      {received ? '✓ Recebida' : '⏳ Pendente'}
+    </button>
+  );
+}
+
 export default function SalesPage() {
   const [showModal, setShowModal] = useState(false);
 
@@ -46,7 +62,7 @@ export default function SalesPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-slate-50 dark:bg-slate-800/50">
-              {['Cliente', 'Imóvel', 'Valor', 'Comissão', 'Corretor', 'Data'].map((h) => (
+              {['Cliente', 'Imóvel', 'Valor', 'Comissão', 'Status Comissão', 'Corretor', 'Data'].map((h) => (
                 <th key={h} className="text-left px-4 py-3 font-medium text-slate-600">{h}</th>
               ))}
             </tr>
@@ -59,11 +75,12 @@ export default function SalesPage() {
                 <td className="px-4 py-3 text-slate-600">{s.property?.code} - {s.property?.name}</td>
                 <td className="px-4 py-3 font-semibold text-green-700">{formatCurrency(Number(s.saleValue))}</td>
                 <td className="px-4 py-3 text-amber-700">{formatCurrency(Number(s.commissionValue))} ({s.commissionPercent}%)</td>
+                <td className="px-4 py-3"><CommissionBadge sale={s} /></td>
                 <td className="px-4 py-3 text-slate-600">{s.user?.name}</td>
                 <td className="px-4 py-3 text-slate-400">{formatDate(s.soldAt)}</td>
               </tr>
             ))}
-            {!isLoading && !sales?.length && <tr><td colSpan={6} className="text-center py-12 text-slate-400">Nenhuma venda registrada</td></tr>}
+            {!isLoading && !sales?.length && <tr><td colSpan={7} className="text-center py-12 text-slate-400">Nenhuma venda registrada</td></tr>}
           </tbody>
         </table>
       </div>

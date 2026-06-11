@@ -107,6 +107,13 @@ export function SaleModal({ onClose }: { onClose: () => void }) {
             <input {...register('soldAt')} type="date" className="w-full p-2 border rounded-lg text-sm" />
           </div>
           <div>
+            <label className="text-sm font-medium mb-1 block">Status da Comissão</label>
+            <select {...register('commissionStatus')} className="w-full p-2 border rounded-lg text-sm">
+              <option value="PENDING">Pendente</option>
+              <option value="RECEIVED">Recebida</option>
+            </select>
+          </div>
+          <div>
             <label className="text-sm font-medium mb-1 block">Observações</label>
             <textarea {...register('notes')} className="w-full p-2 border rounded-lg text-sm" rows={2} />
           </div>

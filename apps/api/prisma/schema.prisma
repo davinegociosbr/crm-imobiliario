@@ -380,8 +380,9 @@ model Sale {
   saleValue         Decimal    @db.Decimal(15, 2)
   commissionPercent Decimal    @db.Decimal(5, 2)
   commissionValue   Decimal    @db.Decimal(15, 2)
-  soldAt            DateTime   @default(now())
-  status            SaleStatus @default(ACTIVE)
+  soldAt            DateTime         @default(now())
+  status            SaleStatus       @default(ACTIVE)
+  commissionStatus  CommissionStatus @default(PENDING)
   notes             String?
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt

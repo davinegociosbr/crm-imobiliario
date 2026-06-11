@@ -53,6 +53,7 @@ export class SalesService {
         commissionPercent: dto.commissionPercent,
         commissionValue,
         soldAt: dto.soldAt ? new Date(dto.soldAt) : new Date(),
+        commissionStatus: dto.commissionStatus || 'PENDING',
         notes: dto.notes,
         commissions: {
           create: {
@@ -76,6 +77,11 @@ export class SalesService {
   async update(id: string, companyId: string, dto: any) {
     await this.findOne(id, companyId);
     return this.prisma.sale.update({ where: { id }, data: dto });
+  }
+
+  async updateCommissionStatus(id: string, companyId: string, status: string) {
+    await this.findOne(id, companyId);
+    return this.prisma.sale.update({ where: { id }, data: { commissionStatus: status as any } });
   }
 
   async getSummary(companyId: string) {
