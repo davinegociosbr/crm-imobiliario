@@ -66,7 +66,7 @@ export function SaleModal({ onClose }: { onClose: () => void }) {
   const [saleValueDisplay, setSaleValueDisplay] = useState('');
   const { register, handleSubmit, formState: { isSubmitting } } = useForm();
   const { data: leads } = useQuery({ queryKey: ['leads-select'], queryFn: () => api.get('/leads', { params: { take: 500 } }).then(r => r.data.data) });
-  const { data: properties } = useQuery({ queryKey: ['properties-select'], queryFn: () => api.get('/properties', { params: { take: 500 } }).then(r => r.data.data) });
+  const { data: properties } = useQuery({ queryKey: ['properties-select-available'], queryFn: () => api.get('/properties', { params: { take: 500, status: 'AVAILABLE' } }).then(r => r.data.data) });
 
   function handlePropertyChange(id: string) {
     setPropertyId(id);
