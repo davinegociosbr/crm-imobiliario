@@ -4,13 +4,33 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { X, Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useState } from 'react';
+
+function formatBRL(value: string) {
+  const digits = value.replace(/\D/g, '');
+  if (!digits) return '';
+  const num = parseInt(digits, 10) / 100;
+  return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function parseBRL(formatted: string): number {
+  return parseFloat(formatted.replace(/[R$\s.]/g, '').replace(',', '.')) || 0;
+}
 
 export function PropertyModal({ property, onClose }: { property?: any; onClose: () => void }) {
   const qc = useQueryClient();
-  const { register, handleSubmit, formState: { isSubmitting } } = useForm({ defaultValues: property || {} });
+  const [priceDisplay, setPriceDisplay] = useState<string>(
+    property?.price ? formatBRL(String(Math.round(Number(property.price) * 100))) : ''
+  );
+  const { register, handleSubmit, formState: { isSubmitting } } = useForm({
+    defaultValues: { ...property, price: property?.price ?? '' },
+  });
 
   const mutation = useMutation({
-    mutationFn: (data: any) => property ? api.put(`/properties/${property.id}`, data) : api.post('/properties', data),
+    mutationFn: (data: any) => {
+      const payload = { ...data, price: parseBRL(priceDisplay) };
+      return property ? api.put(`/properties/${property.id}`, payload) : api.post('/properties', payload);
+    },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['properties'] }); toast.success('Imóvel salvo!'); onClose(); },
     onError: (e: any) => toast.error(e.response?.data?.message || 'Erro ao salvar'),
   });
@@ -39,7 +59,17 @@ export function PropertyModal({ property, onClose }: { property?: any; onClose: 
             <div><label className="label">Cidade *</label><input {...register('city', { required: true })} className="field" placeholder="São Paulo" /></div>
             <div><label className="label">Bairro</label><input {...register('neighborhood')} className="field" placeholder="Moema" /></div>
             <div className="col-span-2"><label className="label">Endereço</label><input {...register('address')} className="field" placeholder="Rua das Flores, 123" /></div>
-            <div><label className="label">Valor (R$) *</label><input {...register('price', { required: true })} type="number" className="field" placeholder="850000" /></div>
+            <div>
+              <label className="label">Valor (R$) *</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                className="field"
+                placeholder="R$ 0,00"
+                value={priceDisplay}
+                onChange={(e) => setPriceDisplay(formatBRL(e.target.value))}
+              />
+            </div>
             <div><label className="label">Área Privativa (m²)</label><input {...register('privateArea')} type="number" className="field" placeholder="82" /></div>
             <div><label className="label">Dormitórios</label><input {...register('bedrooms')} type="number" className="field" /></div>
             <div><label className="label">Suítes</label><input {...register('suites')} type="number" className="field" /></div>
