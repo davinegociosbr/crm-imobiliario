@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, TrendingUp, DollarSign } from 'lucide-react';
+import { Plus, TrendingUp, DollarSign, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/utils';
@@ -25,10 +25,18 @@ function CommissionBadge({ sale }: { sale: any }) {
 
 export default function SalesPage() {
   const [showModal, setShowModal] = useState(false);
+  const [editSale, setEditSale] = useState<any>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const { data: sales, isLoading } = useQuery({
     queryKey: ['sales'],
     queryFn: () => api.get('/sales').then((r) => r.data.data),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/sales/${id}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sales'] }); qc.invalidateQueries({ queryKey: ['sales-summary'] }); toast.success('Venda excluída!'); setDeleteConfirm(null); },
+    onError: () => toast.error('Erro ao excluir'),
   });
 
   const { data: summary } = useQuery({
@@ -62,7 +70,7 @@ export default function SalesPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-slate-50 dark:bg-slate-800/50">
-              {['Cliente', 'Imóvel', 'Valor', 'Comissão', 'Status Comissão', 'Corretor', 'Data'].map((h) => (
+              {['Cliente', 'Imóvel', 'Valor', 'Comissão', 'Status Comissão', 'Corretor', 'Data', ''].map((h) => (
                 <th key={h} className="text-left px-4 py-3 font-medium text-slate-600">{h}</th>
               ))}
             </tr>
@@ -78,6 +86,20 @@ export default function SalesPage() {
                 <td className="px-4 py-3"><CommissionBadge sale={s} /></td>
                 <td className="px-4 py-3 text-slate-600">{s.user?.name}</td>
                 <td className="px-4 py-3 text-slate-400">{formatDate(s.soldAt)}</td>
+                <td className="px-4 py-3">
+                  {deleteConfirm === s.id ? (
+                    <div className="flex items-center gap-1 text-xs">
+                      <span className="text-slate-500">Excluir?</span>
+                      <button onClick={() => deleteMutation.mutate(s.id)} className="text-red-600 font-medium hover:underline">Sim</button>
+                      <button onClick={() => setDeleteConfirm(null)} className="text-slate-500 hover:underline">Não</button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-1">
+                      <button onClick={() => { setEditSale(s); setShowModal(true); }} className="p-1.5 rounded hover:bg-slate-100 text-slate-500"><Pencil className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => setDeleteConfirm(s.id)} className="p-1.5 rounded hover:bg-red-50 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
+                    </div>
+                  )}
+                </td>
               </tr>
             ))}
             {!isLoading && !sales?.length && <tr><td colSpan={7} className="text-center py-12 text-slate-400">Nenhuma venda registrada</td></tr>}
@@ -85,7 +107,7 @@ export default function SalesPage() {
         </table>
       </div>
 
-      {showModal && <SaleModal onClose={() => setShowModal(false)} />}
+      {showModal && <SaleModal sale={editSale} onClose={() => { setShowModal(false); setEditSale(null); }} />}
     </div>
   );
 }

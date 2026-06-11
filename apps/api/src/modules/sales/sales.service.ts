@@ -79,6 +79,12 @@ export class SalesService {
     return this.prisma.sale.update({ where: { id }, data: dto });
   }
 
+  async remove(id: string, companyId: string) {
+    await this.findOne(id, companyId);
+    await this.prisma.sale.delete({ where: { id } });
+    return { message: 'Venda excluída' };
+  }
+
   async updateCommissionStatus(id: string, companyId: string, status: string) {
     await this.findOne(id, companyId);
     return this.prisma.sale.update({ where: { id }, data: { commissionStatus: status as any } });
