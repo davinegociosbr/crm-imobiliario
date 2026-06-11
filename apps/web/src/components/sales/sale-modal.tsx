@@ -52,16 +52,33 @@ function SearchSelect({ label, required, items, value, onChange, getLabel }: {
   );
 }
 
+function formatBRL(value: string) {
+  const digits = value.replace(/\D/g, '');
+  if (!digits) return '';
+  return (parseInt(digits, 10) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+function parseBRL(v: string) { return parseFloat(v.replace(/[R$\s.]/g, '').replace(',', '.')) || 0; }
+
 export function SaleModal({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();
   const [leadId, setLeadId] = useState('');
   const [propertyId, setPropertyId] = useState('');
+  const [saleValueDisplay, setSaleValueDisplay] = useState('');
   const { register, handleSubmit, formState: { isSubmitting } } = useForm();
   const { data: leads } = useQuery({ queryKey: ['leads-select'], queryFn: () => api.get('/leads', { params: { take: 500 } }).then(r => r.data.data) });
   const { data: properties } = useQuery({ queryKey: ['properties-select'], queryFn: () => api.get('/properties', { params: { take: 500 } }).then(r => r.data.data) });
 
+  function handlePropertyChange(id: string) {
+    setPropertyId(id);
+    const prop = (properties || []).find((p: any) => p.id === id);
+    if (prop?.price) {
+      const cents = String(Math.round(Number(prop.price) * 100));
+      setSaleValueDisplay(formatBRL(cents));
+    }
+  }
+
   const mutation = useMutation({
-    mutationFn: (data: any) => api.post('/sales', { ...data, leadId, propertyId, saleValue: Number(data.saleValue), commissionPercent: Number(data.commissionPercent) }),
+    mutationFn: (data: any) => api.post('/sales', { ...data, leadId, propertyId, saleValue: parseBRL(saleValueDisplay), commissionPercent: Number(data.commissionPercent) }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['sales'] }); qc.invalidateQueries({ queryKey: ['sales-summary'] }); toast.success('Venda registrada!'); onClose(); },
     onError: (e: any) => toast.error(e.response?.data?.message || 'Erro'),
   });
@@ -75,10 +92,11 @@ export function SaleModal({ onClose }: { onClose: () => void }) {
         </div>
         <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="p-6 space-y-4">
           <SearchSelect label="Cliente" required items={leads || []} value={leadId} onChange={setLeadId} getLabel={l => l.name} />
-          <SearchSelect label="Imóvel" required items={properties || []} value={propertyId} onChange={setPropertyId} getLabel={p => `${p.code} - ${p.name}`} />
+          <SearchSelect label="Imóvel" required items={properties || []} value={propertyId} onChange={handlePropertyChange} getLabel={p => `${p.code} - ${p.name}`} />
           <div>
             <label className="text-sm font-medium mb-1 block">Valor da Venda (R$) *</label>
-            <input {...register('saleValue', { required: true })} type="number" className="w-full p-2 border rounded-lg text-sm" placeholder="850000" />
+            <input type="text" inputMode="numeric" className="w-full p-2 border rounded-lg text-sm" placeholder="R$ 0,00"
+              value={saleValueDisplay} onChange={e => setSaleValueDisplay(formatBRL(e.target.value))} />
           </div>
           <div>
             <label className="text-sm font-medium mb-1 block">% Comissão</label>
