@@ -11,7 +11,7 @@ export function TaskModal({ onClose }: { onClose: () => void }) {
   const { data: leads } = useQuery({ queryKey: ['leads-select'], queryFn: () => api.get('/leads').then(r => r.data.data) });
 
   const mutation = useMutation({
-    mutationFn: (data: any) => api.post('/tasks', { ...data, dueAt: data.dueAt ? new Date(data.dueAt).toISOString() : null }),
+    mutationFn: (data: any) => api.post('/tasks', { ...data, leadId: data.leadId || null, dueAt: data.dueAt ? new Date(data.dueAt).toISOString() : null }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['tasks'] }); toast.success('Tarefa criada!'); onClose(); },
     onError: (e: any) => toast.error(e.response?.data?.message || 'Erro'),
   });
