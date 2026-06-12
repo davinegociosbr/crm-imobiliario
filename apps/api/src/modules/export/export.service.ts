@@ -139,6 +139,20 @@ export class ExportService {
   }
 
   async buildExcel(companyId: string): Promise<ExcelJS.Buffer> {
+    // Carrega labels customizadas de etapas do funil da empresa
+    const company = await this.prisma.company.findUnique({ where: { id: companyId }, select: { settings: true } });
+    const settings: any = company?.settings || {};
+    const stageLabels: Record<string, string> = settings.stageLabels || {};
+    const customStages: { key: string; label: string }[] = settings.customPipelineStages || [];
+
+    const getPipelineLabel = (stage: string): string => {
+      if (stageLabels[stage]) return stageLabels[stage];
+      if (PIPELINE_PT[stage]) return PIPELINE_PT[stage];
+      const custom = customStages.find(c => c.key === stage);
+      if (custom) return custom.label;
+      return stage;
+    };
+
     const [allLeads, properties, visits, proposals, reservations, sales, commissions, tasks, activities] = await Promise.all([
       this.prisma.lead.findMany({ where: { companyId }, include: { assignedUser: { select: { name: true } } }, orderBy: { createdAt: 'desc' } }),
       this.prisma.property.findMany({ where: { companyId }, orderBy: { createdAt: 'asc' } }),
@@ -187,7 +201,7 @@ export class ExportService {
       { header: 'Cadastro',               key: 'createdAt' },
     ];
     funilLeads.forEach((l) => wsFunil.addRow({
-      stage: PIPELINE_PT[l.pipelineStage] || l.pipelineStage,
+      stage: getPipelineLabel(l.pipelineStage),
       name: l.name,
       phone: l.phone,
       whatsapp: l.whatsapp || '',
@@ -235,7 +249,7 @@ export class ExportService {
       interest: l.interest || '', potentialValue: currency(l.potentialValue),
       origin: ORIGIN_PT[l.origin] || l.origin,
       status: STATUS_PT[l.status] || l.status,
-      pipeline: PIPELINE_PT[l.pipelineStage] || l.pipelineStage,
+      pipeline: getPipelineLabel(l.pipelineStage),
       nextAction: l.nextAction || '', nextContactAt: ptDate(l.nextContactAt),
       lostReason: l.lostReason || '', broker: l.assignedUser?.name || '',
       notes: l.notes || '', createdAt: ptDate(l.createdAt),
