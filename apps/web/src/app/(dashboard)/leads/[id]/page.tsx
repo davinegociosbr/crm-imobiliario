@@ -16,7 +16,7 @@ import {
 } from '@/lib/utils';
 import { LeadModal } from '@/components/leads/lead-modal';
 
-const TABS = ['Dados', 'Timeline', 'Notas', 'Visitas', 'Propostas', 'Tarefas'] as const;
+const TABS = ['Dados', 'Timeline', 'Notas', 'Visitas', 'Propostas', 'Tarefas', 'Simulação'] as const;
 type Tab = typeof TABS[number];
 
 export default function LeadDetailPage() {
@@ -484,6 +484,17 @@ export default function LeadDetailPage() {
               </tbody>
             </table>
           )}
+        </div>
+      )}
+
+      {/* Aba: Simulação */}
+      {activeTab === 'Simulação' && (
+        <div className="rounded-xl border overflow-hidden bg-white dark:bg-slate-900" style={{ height: 'calc(100vh - 220px)' }}>
+          <iframe
+            src={`/simulador.html?cliente=${encodeURIComponent(lead.name || '')}&empreendimento=${encodeURIComponent(lead.interest || '')}&leadId=${lead.id}`}
+            className="w-full h-full border-0"
+            title="Simulador de Parcelamento"
+          />
         </div>
       )}
 

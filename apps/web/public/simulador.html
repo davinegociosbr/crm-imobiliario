@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulador de Parcelamento de Imóvel</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f4f4f4; color: #222; padding: 1rem; min-height: 100vh; }
+    h1 { font-size: 17px; font-weight: 500; margin-bottom: 0.75rem; color: #222; }
+    .section { background: #fff; border: 1px solid #e0e0e0; border-radius: 10px; padding: 0.65rem 1rem; margin-bottom: 0.6rem; }
+    .section-title { font-size: 11px; font-weight: 500; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 0.6rem; }
+    .badge { display: inline-block; font-size: 10px; font-weight: 500; padding: 1px 6px; border-radius: 5px; margin-left: 6px; vertical-align: middle; }
+    .badge-a { background: #eaf3fb; color: #185FA5; }
+    .badge-b { background: #fff0e6; color: #854F0B; }
+    .field-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; }
+    .field { display: flex; flex-direction: column; gap: 3px; }
+    .field label { font-size: 12px; color: #666; }
+    .input-prefix { display: flex; align-items: center; border: 1px solid #ccc; border-radius: 7px; overflow: hidden; height: 32px; }
+    .input-prefix span { padding: 0 8px; font-size: 12px; font-weight: 500; color: #666; background: #f4f4f4; border-right: 1px solid #e0e0e0; height: 100%; display: flex; align-items: center; white-space: nowrap; }
+    .input-prefix input { border: none; outline: none; background: transparent; padding: 0 8px; width: 100%; font-size: 13px; color: #222; height: 100%; }
+    input[type="number"], input[type="text"] { border: 1px solid #ccc; border-radius: 7px; height: 32px; padding: 0 8px; font-size: 13px; color: #222; outline: none; width: 100%; }
+    select { border: 1px solid #ccc; border-radius: 7px; height: 32px; padding: 0 8px; font-size: 13px; color: #222; outline: none; width: 100%; background: #fff; }
+    input:focus, .input-prefix:focus-within { border-color: #378ADD; box-shadow: 0 0 0 2px rgba(55,138,221,0.15); }
+    .toggle-row { display: flex; gap: 6px; align-items: center; margin-bottom: 3px; }
+    .toggle-btn { font-size: 12px; padding: 3px 11px; border-radius: 7px; border: 1px solid #ccc; background: transparent; color: #666; cursor: pointer; }
+    .toggle-btn.active { background: #f0f0f0; color: #222; border-color: #aaa; font-weight: 500; }
+    .split-bar-wrap { margin: 7px 0 3px; }
+    .split-bar { height: 8px; border-radius: 6px; display: flex; overflow: hidden; background: #e0e0e0; }
+    .bar-a { background: #378ADD; transition: width 0.2s; }
+    .bar-b { background: #EF9F27; transition: width 0.2s; }
+    .split-labels { display: flex; justify-content: space-between; font-size: 11px; margin-top: 3px; }
+    .split-labels .la { color: #185FA5; font-weight: 500; }
+    .split-labels .lb { color: #854F0B; font-weight: 500; }
+    .section-ab { border: 1px solid #e0e0e0; border-radius: 10px; padding: 0.65rem 1rem; margin-bottom: 0.6rem; background: #fff; }
+    .section-ab-a { border-left: 4px solid #378ADD; }
+    .section-ab-b { border-left: 4px solid #EF9F27; }
+    .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+    .metric { background: #f4f4f4; border-radius: 7px; padding: 7px 10px; }
+    .metric-label { font-size: 11px; color: #888; margin: 0 0 2px; }
+    .metric-value { font-size: 15px; font-weight: 500; color: #222; margin: 0; }
+    .metric-sub { font-size: 10px; color: #aaa; margin: 2px 0 0; }
+    .metric-a { border-left: 3px solid #378ADD; background: #eaf3fb; }
+    .metric-a .metric-label { color: #185FA5; }
+    .metric-a .metric-value { color: #185FA5; }
+    .metric-b { border-left: 3px solid #EF9F27; background: #fff8ee; }
+    .metric-b .metric-label { color: #854F0B; }
+    .metric-b .metric-value { color: #854F0B; }
+    .divider { height: 1px; background: #e0e0e0; margin: 0.65rem 0; }
+    .sub-header-a { font-size: 11px; font-weight: 500; color: #185FA5; margin-bottom: 6px; }
+    .sub-header-b { font-size: 11px; font-weight: 500; color: #854F0B; margin-bottom: 6px; }
+    .warning-box { background: #fff8e1; border: 1px solid #ffe082; border-radius: 7px; padding: 7px 10px; font-size: 12px; color: #a07000; margin-top: 8px; }
+    .info-note { font-size: 11px; color: #aaa; margin-top: 6px; }
+
+    /* Reforço rows */
+    .reforco-table { width: 100%; border-collapse: collapse; margin-top: 3px; }
+    .reforco-table th { font-size: 10px; color: #999; font-weight: 500; text-align: left; padding: 0 6px 4px 0; }
+    .reforco-table th.col-check { width: 90px; }
+    .reforco-table th.col-qty { width: 100px; }
+    .reforco-table th.col-val { }
+    .reforco-table td { padding: 2px 6px 2px 0; vertical-align: middle; }
+    .reforco-table td.col-check { }
+    .check-label { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #444; cursor: pointer; user-select: none; }
+    .check-label input[type="checkbox"] { width: 14px; height: 14px; cursor: pointer; accent-color: #378ADD; flex-shrink: 0; }
+    .check-label-b input[type="checkbox"] { accent-color: #EF9F27; }
+    .reforco-table input[type="number"] { height: 28px; font-size: 12px; }
+    .reforco-table .input-prefix { height: 28px; }
+    .reforco-table .input-prefix input { font-size: 12px; }
+
+    /* Histórico */
+    .hist-card { border: 1px solid #e8e8e8; border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; background: #fafafa; }
+    .hist-card:last-child { margin-bottom: 0; }
+    .hist-info { flex: 1; min-width: 0; }
+    .hist-title { font-size: 14px; font-weight: 500; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .hist-sub { font-size: 12px; color: #888; margin-top: 2px; }
+    .hist-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .hist-btn { font-size: 12px; padding: 4px 12px; border-radius: 6px; border: 1px solid #ccc; background: #fff; cursor: pointer; color: #444; }
+    .hist-btn:hover { background: #f0f0f0; }
+    .hist-btn-del { color: #c00; border-color: #f5c6cb; }
+    .hist-btn-del:hover { background: #fff0f0; }
+    .hist-empty { font-size: 13px; color: #bbb; text-align: center; padding: 16px 0; }
+
+    /* Print / PDF */
+    @media print {
+      body { background: #fff; padding: 1rem; }
+      .no-print, .section-ab .field-group, table.reforco-table, .toggle-row,
+      #section-whatsapp, #section-historico, button { display: none !important; }
+      .section-ab { page-break-inside: avoid; }
+      .print-header { display: block !important; }
+      h1 { font-size: 16px; }
+    }
+    .print-header { display: none; }
+  </style>
+</head>
+<body>
+
+<h1>Simulador de Parcelamento de Imóvel</h1>
+<div class="no-print" style="position:sticky; top:0; z-index:100; background:#fff; border-bottom:1px solid #e0e0e0; padding:8px 16px; display:flex; align-items:center; gap:12px; box-shadow:0 2px 6px rgba(0,0,0,0.08);">
+  <button onclick="salvarSimulacao()" style="height:36px; padding:0 18px; border-radius:8px; border:none; background:#3a7d44; color:#fff; font-size:14px; font-weight:600; cursor:pointer;">💾 Salvar simulação</button>
+  <button onclick="carregarSimulacao()" style="height:36px; padding:0 18px; border-radius:8px; border:1px solid #3a7d44; background:#fff; color:#3a7d44; font-size:14px; font-weight:600; cursor:pointer;">↩ Restaurar última salva</button>
+  <span id="save-status" style="font-size:13px; color:#666;"></span>
+</div>
+
+<!-- IDENTIFICAÇÃO -->
+<div class="section no-print">
+  <p class="section-title">Identificação</p>
+  <div class="field-group">
+    <div class="field">
+      <label for="nome-cliente">Nome do cliente</label>
+      <input type="text" id="nome-cliente" placeholder="Ex: João Silva" oninput="calcular()">
+    </div>
+    <div class="field">
+      <label for="nome-empreendimento">Empreendimento</label>
+      <input type="text" id="nome-empreendimento" placeholder="Ex: Residencial Parque Verde" oninput="calcular()">
+    </div>
+  </div>
+</div>
+
+<!-- DADOS DO IMÓVEL -->
+<div class="section">
+  <p class="section-title">Dados do imóvel</p>
+  <div class="field-group">
+    <div class="field">
+      <label for="valor-imovel">Valor total do imóvel</label>
+      <div class="input-prefix">
+        <span>R$</span>
+        <input type="text" id="valor-imovel" placeholder="0,00" inputmode="numeric">
+      </div>
+    </div>
+    <div class="field">
+      <label>Entrada</label>
+      <div class="toggle-row">
+        <button class="toggle-btn active" id="btn-reais" onclick="toggleEntrada('reais')">R$</button>
+        <button class="toggle-btn" id="btn-pct" onclick="toggleEntrada('pct')">%</button>
+      </div>
+      <div class="input-prefix">
+        <span id="entrada-prefixo">R$</span>
+        <input type="text" id="entrada-val" placeholder="0,00" inputmode="numeric">
+      </div>
+    </div>
+    <div class="field">
+      <label for="pct-saldo-a">Saldo A (% do imóvel)</label>
+      <div class="input-prefix">
+        <span>%</span>
+        <input type="text" id="pct-saldo-a" value="60" placeholder="60,00" inputmode="numeric">
+      </div>
+      <div class="split-bar-wrap">
+        <div class="split-bar">
+          <div class="bar-a" id="bar-a" style="width:60%"></div>
+          <div class="bar-b" id="bar-b" style="width:40%"></div>
+        </div>
+        <div class="split-labels">
+          <span class="la" id="label-a">Saldo A: 60%</span>
+          <span class="lb" id="label-b">Saldo B: 40%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SALDO A -->
+<div class="section-ab section-ab-a">
+  <p class="section-title">Saldo A <span class="badge badge-a">durante a obra · sem juros</span></p>
+  <div class="field-group" style="margin-bottom:16px;">
+    <div class="field">
+      <label for="qtd-parcelas-a">Quantidade de parcelas</label>
+      <input type="number" id="qtd-parcelas-a" value="36" min="1" step="1">
+    </div>
+  </div>
+  <p style="font-size:12px; color:#888; font-weight:500; margin-bottom:8px;">OPÇÕES DE REFORÇO</p>
+  <table class="reforco-table">
+    <thead>
+      <tr>
+        <th class="col-check">Exibir no texto</th>
+        <th class="col-qty">Qtd. reforços</th>
+        <th class="col-val">Valor por reforço</th>
+      </tr>
+    </thead>
+    <tbody id="reforcos-a-body">
+    </tbody>
+  </table>
+</div>
+
+<!-- SALDO B -->
+<div class="section-ab section-ab-b" id="section-saldo-b">
+  <p class="section-title">Saldo B <span class="badge badge-b">após entrega · com juros</span></p>
+
+  <div style="margin-bottom:14px;">
+    <p style="font-size:12px; color:#888; font-weight:500; margin-bottom:6px;">MÉTODO DE CÁLCULO</p>
+    <div class="toggle-row">
+      <button class="toggle-btn active" id="btn-metodo-price" onclick="toggleMetodoB('price')">Price (taxa livre)</button>
+      <button class="toggle-btn" id="btn-metodo-corbetta" onclick="toggleMetodoB('corbetta')">Corbetta</button>
+    </div>
+  </div>
+
+  <div class="field-group" style="margin-bottom:16px;">
+    <div class="field" id="field-qtd-parcelas-b">
+      <label for="qtd-parcelas-b">Quantidade de parcelas</label>
+      <input type="number" id="qtd-parcelas-b" value="120" min="1" step="1">
+    </div>
+    <div class="field" id="field-taxa-juros">
+      <label for="taxa-juros">Taxa de juros</label>
+      <div class="toggle-row">
+        <button class="toggle-btn active" id="btn-mensal" onclick="toggleTaxa('mensal')">Mensal</button>
+        <button class="toggle-btn" id="btn-anual" onclick="toggleTaxa('anual')">Anual</button>
+      </div>
+      <div class="input-prefix">
+        <span>%</span>
+        <input type="text" id="taxa-juros" value="0,80" placeholder="0,00" inputmode="numeric">
+      </div>
+      <span id="taxa-convertida" style="font-size:12px; color:#888; margin-top:4px;"></span>
+    </div>
+    <div class="field" id="field-prazo-corbetta" style="display:none;">
+      <label for="prazo-corbetta">Prazo (tabela Corbetta)</label>
+      <select id="prazo-corbetta" onchange="calcular()" style="height:38px; border:1px solid #ccc; border-radius:8px; padding:0 10px; font-size:14px; color:#222; background:#fff;">
+        <option value="12">12 meses</option>
+        <option value="24">24 meses</option>
+        <option value="36">36 meses</option>
+        <option value="48">48 meses</option>
+        <option value="60">60 meses</option>
+        <option value="72">72 meses</option>
+        <option value="84">84 meses</option>
+        <option value="96">96 meses</option>
+        <option value="108">108 meses</option>
+        <option value="120" selected>120 meses</option>
+        <option value="132">132 meses</option>
+        <option value="144">144 meses</option>
+        <option value="156">156 meses</option>
+        <option value="168">168 meses</option>
+        <option value="180">180 meses</option>
+        <option value="240">240 meses</option>
+      </select>
+    </div>
+    <input type="hidden" id="taxa-corbetta" value="0,75">
+    <div class="field" id="field-desconto-ultima" style="display:none;">
+      <label>Desconto na última parcela</label>
+      <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:4px;">
+        <label class="check-label check-label-b" style="font-size:13px;">
+          <input type="checkbox" id="desconto-ultima-check" onchange="calcular()"> Exibir no texto
+        </label>
+        <span style="font-size:12px; color:#aaa;">Índice aplicado conforme prazo do plano</span>
+      </div>
+      <input type="hidden" id="desconto-ultima-meses">
+    </div>
+  </div>
+  <p style="font-size:12px; color:#888; font-weight:500; margin-bottom:8px;">OPÇÕES DE REFORÇO</p>
+  <table class="reforco-table">
+    <thead>
+      <tr>
+        <th class="col-check">Exibir no texto</th>
+        <th class="col-qty">Qtd. reforços</th>
+        <th class="col-val">Valor por reforço</th>
+      </tr>
+    </thead>
+    <tbody id="reforcos-b-body">
+    </tbody>
+  </table>
+</div>
+
+<!-- RESULTADO -->
+<div class="section">
+  <p class="section-title">Resultado da simulação</p>
+  <div id="resultado-content">
+    <p style="color:#aaa; font-size:14px;">Preencha os campos acima para ver o resultado.</p>
+  </div>
+</div>
+
+<!-- WHATSAPP -->
+<div class="section no-print" id="section-whatsapp" style="display:none;">
+  <p class="section-title">Texto para WhatsApp</p>
+  <textarea id="wpp-texto" readonly style="width:100%; min-height:220px; border:1px solid #e0e0e0; border-radius:8px; padding:12px; font-size:14px; line-height:1.6; color:#222; background:#f9f9f9; resize:vertical; font-family:Arial,sans-serif;"></textarea>
+  <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
+    <button onclick="copiarTexto()" style="flex:1; min-width:140px; height:40px; border-radius:8px; border:1px solid #ccc; background:#fff; font-size:14px; cursor:pointer; font-weight:500;">📋 Copiar texto</button>
+    <button onclick="salvarNoHistorico()" style="flex:1; min-width:140px; height:40px; border-radius:8px; border:1px solid #ccc; background:#fff; font-size:14px; cursor:pointer; font-weight:500;">💾 Salvar no histórico</button>
+    <button onclick="exportarPDF()" style="flex:1; min-width:140px; height:40px; border-radius:8px; border:1px solid #378ADD; background:#eaf3fb; color:#185FA5; font-size:14px; cursor:pointer; font-weight:500;">🖨️ Exportar PDF</button>
+    <span id="copia-feedback" style="font-size:13px; color:#3a7d44; align-self:center; display:none;">Copiado!</span>
+    <span id="salvo-feedback" style="font-size:13px; color:#3a7d44; align-self:center; display:none;">Salvo!</span>
+  </div>
+</div>
+
+<!-- HISTÓRICO -->
+<div class="section" id="section-historico">
+  <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleHistorico()">
+    <p class="section-title" style="margin:0;">📂 Histórico de simulações</p>
+    <span id="historico-toggle-icon" style="font-size:12px; color:#888;">▼</span>
+  </div>
+  <div id="historico-lista" style="margin-top:12px; display:none;"></div>
+</div>
+
+<script>
+  let modoEntrada = 'reais';
+  let modoTaxa = 'mensal';
+  let metodoB = 'price';
+
+  const tabelaCorbetta = {
+    12: 17468.50901, 24: 9094.010668, 36: 6296.66253,
+    48: 4894.05663,  60: 4049.65174,  72: 3484.561827,
+    84: 3079.237707, 96: 2773.885983, 108: 2535.274435,
+    120: 2343.453555, 132: 2185.720481, 144: 2053.600669,
+    156: 1941.22245, 168: 1844.388057, 180: 1760.01614,
+    240: 1460.262188
+  };
+  const baseCorbetta = 200000;
+
+  function calcFatorCorbetta(prazo, taxaSimplesMensal) {
+    const m = Math.round(prazo / 12);
+    let soma = 0;
+    for (let k = 1; k <= m; k++) soma += 1 / (1 + taxaSimplesMensal * 12 * k);
+    const pmt_unit = tabelaCorbetta[prazo] / baseCorbetta;
+    const pvifa = 1 / pmt_unit;
+    return soma / pvifa;
+  }
+
+  function reducaoReforco(valReforco, prazo) {
+    if (valReforco <= 0) return 0;
+    const taxaStr = document.getElementById('taxa-corbetta').value.replace(',', '.');
+    const taxa = (parseFloat(taxaStr) || 0.75) / 100;
+    return valReforco * calcFatorCorbetta(prazo, taxa);
+  }
+
+  function toggleMetodoB(modo) {
+    metodoB = modo;
+    document.getElementById('btn-metodo-price').classList.toggle('active', modo === 'price');
+    document.getElementById('btn-metodo-corbetta').classList.toggle('active', modo === 'corbetta');
+    document.getElementById('field-taxa-juros').style.display = modo === 'price' ? '' : 'none';
+    document.getElementById('field-qtd-parcelas-b').style.display = modo === 'price' ? '' : 'none';
+    document.getElementById('field-prazo-corbetta').style.display = modo === 'corbetta' ? '' : 'none';
+    document.getElementById('field-taxa-corbetta').style.display = modo === 'corbetta' ? '' : 'none';
+    document.getElementById('field-desconto-ultima').style.display = modo === 'corbetta' ? '' : 'none';
+    calcular();
+  }
+
+  function parseBRL(str) {
+    if (!str) return 0;
+    return parseFloat(str.replace(/\./g, '').replace(',', '.')) || 0;
+  }
+
+  function formatBRL(val) {
+    return val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function fmt(val) {
+    return 'R$ ' + formatBRL(val);
+  }
+
+  function maskMoney(input) {
+    let raw = input.value.replace(/\D/g, '');
+    if (!raw) { input.value = ''; return; }
+    input.value = formatBRL(parseInt(raw, 10) / 100);
+  }
+
+  function maskPct(input) {
+    input.value = input.value.replace(/[^\d,]/g, '');
+  }
+
+  // Criar linhas de reforço dinamicamente
+  function criarLinhasReforco(tbodyId, saldo) {
+    const tbody = document.getElementById(tbodyId);
+    tbody.innerHTML = '';
+    for (let i = 1; i <= 4; i++) {
+      const labelClass = saldo === 'b' ? 'check-label check-label-b' : 'check-label';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="col-check">
+          <label class="${labelClass}">
+            <input type="checkbox" id="ref-${saldo}-${i}-check" onchange="calcular()">
+            Opção ${i}
+          </label>
+        </td>
+        <td class="col-qty">
+          <input type="number" id="ref-${saldo}-${i}-qty" value="0" min="0" step="1" oninput="calcular()">
+        </td>
+        <td class="col-val">
+          <div class="input-prefix">
+            <span>R$</span>
+            <input type="text" id="ref-${saldo}-${i}-val" placeholder="0,00" inputmode="numeric"
+              oninput="maskMoney(this); calcular()">
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+
+  criarLinhasReforco('reforcos-a-body', 'a');
+  criarLinhasReforco('reforcos-b-body', 'b');
+
+  function getReforcos(saldo) {
+    const result = [];
+    for (let i = 1; i <= 4; i++) {
+      const checked = document.getElementById(`ref-${saldo}-${i}-check`).checked;
+      const qty = parseInt(document.getElementById(`ref-${saldo}-${i}-qty`).value) || 0;
+      const val = parseBRL(document.getElementById(`ref-${saldo}-${i}-val`).value);
+      result.push({ checked, qty, val, total: qty * val });
+    }
+    return result;
+  }
+
+  document.getElementById('valor-imovel').addEventListener('input', function() { maskMoney(this); calcular(); });
+  document.getElementById('entrada-val').addEventListener('input', function() {
+    if (modoEntrada === 'reais') maskMoney(this);
+    calcular();
+  });
+  document.getElementById('pct-saldo-a').addEventListener('input', function() { maskPct(this); calcular(); });
+  document.getElementById('taxa-juros').addEventListener('input', function() { maskPct(this); calcular(); });
+
+  function toggleTaxa(modo) {
+    modoTaxa = modo;
+    document.getElementById('btn-mensal').classList.toggle('active', modo === 'mensal');
+    document.getElementById('btn-anual').classList.toggle('active', modo === 'anual');
+    calcular();
+  }
+  document.getElementById('qtd-parcelas-a').addEventListener('input', calcular);
+  document.getElementById('qtd-parcelas-b').addEventListener('input', calcular);
+
+  function toggleEntrada(modo) {
+    modoEntrada = modo;
+    document.getElementById('btn-reais').classList.toggle('active', modo === 'reais');
+    document.getElementById('btn-pct').classList.toggle('active', modo === 'pct');
+    const input = document.getElementById('entrada-val');
+    const prefixo = document.getElementById('entrada-prefixo');
+    const valorImovel = parseBRL(document.getElementById('valor-imovel').value);
+    if (modo === 'pct') {
+      const entradaAtual = parseBRL(input.value);
+      const pct = valorImovel > 0 ? (entradaAtual / valorImovel * 100) : 20;
+      input.value = pct.toFixed(2).replace('.', ',');
+      input.placeholder = '0,00';
+      prefixo.textContent = '%';
+    } else {
+      const rawPct = parseFloat(input.value.replace(',', '.')) || 0;
+      input.value = formatBRL(valorImovel * rawPct / 100);
+      input.placeholder = '0,00';
+      prefixo.textContent = 'R$';
+    }
+    calcular();
+  }
+
+  function price(pv, i, n) {
+    if (n <= 0) return 0;
+    if (i === 0) return pv / n;
+    return pv * (i * Math.pow(1 + i, n)) / (Math.pow(1 + i, n) - 1);
+  }
+
+  function calcular() {
+    const valorImovel = parseBRL(document.getElementById('valor-imovel').value);
+    const entradaRaw = document.getElementById('entrada-val').value;
+    const pctA = Math.min(100, Math.max(0, parseFloat(document.getElementById('pct-saldo-a').value.replace(',', '.')) || 0));
+    const pctB = 100 - pctA;
+    const qtdParcelasA = parseInt(document.getElementById('qtd-parcelas-a').value) || 0;
+    const qtdParcelasB = parseInt(document.getElementById('qtd-parcelas-b').value) || 0;
+    const taxaInput = parseFloat(document.getElementById('taxa-juros').value.replace(',', '.')) / 100 || 0;
+    const taxaJuros = modoTaxa === 'anual' ? Math.pow(1 + taxaInput, 1/12) - 1 : taxaInput;
+    const taxaMensalExibir = (taxaJuros * 100).toFixed(4).replace('.', ',');
+    const conv = document.getElementById('taxa-convertida');
+    if (modoTaxa === 'anual' && taxaInput > 0) {
+      conv.textContent = '→ ' + taxaMensalExibir + '% ao mês';
+    } else {
+      conv.textContent = '';
+    }
+    const prazoCorbetta = parseInt(document.getElementById('prazo-corbetta').value) || 120;
+
+    document.getElementById('bar-a').style.width = pctA + '%';
+    document.getElementById('bar-b').style.width = pctB + '%';
+    document.getElementById('label-a').textContent = 'Saldo A: ' + pctA.toFixed(1).replace('.', ',') + '%';
+    document.getElementById('label-b').textContent = 'Saldo B: ' + pctB.toFixed(1).replace('.', ',') + '%';
+    document.getElementById('section-saldo-b').style.display = pctB > 0 ? 'block' : 'none';
+
+    let entrada;
+    if (modoEntrada === 'pct') {
+      entrada = valorImovel * (parseFloat(entradaRaw.replace(',', '.')) || 0) / 100;
+    } else {
+      entrada = parseBRL(entradaRaw);
+    }
+
+    const pctEntrada = valorImovel > 0 ? (entrada / valorImovel * 100) : 0;
+    const valorSaldoA = valorImovel * pctA / 100;
+    const valorSaldoB = valorImovel * pctB / 100;
+    const saldoALiquido = valorSaldoA - entrada;
+
+    const reforcosA = getReforcos('a');
+    const reforcosB = getReforcos('b');
+
+    const parcelaSemReforcoA = qtdParcelasA > 0 ? saldoALiquido / qtdParcelasA : 0;
+
+    let parcelaSemReforcoB, qtdParcelasExibB, labelMetodoB;
+    if (metodoB === 'corbetta') {
+      const fatorCorbetta = tabelaCorbetta[prazoCorbetta] / baseCorbetta;
+      parcelaSemReforcoB = valorSaldoB * fatorCorbetta;
+      qtdParcelasExibB = prazoCorbetta;
+      labelMetodoB = `${prazoCorbetta} meses · tabela Corbetta`;
+    } else {
+      parcelaSemReforcoB = price(valorSaldoB, taxaJuros, qtdParcelasB);
+      qtdParcelasExibB = qtdParcelasB;
+      labelMetodoB = `${qtdParcelasB} parcelas · ${(taxaJuros*100).toFixed(2).replace('.',',')}% a.m.`;
+    }
+
+    // Resultado visual
+    let htmlResult = `
+      <div class="results-grid">
+        <div class="metric">
+          <p class="metric-label">Valor do imóvel</p>
+          <p class="metric-value">${fmt(valorImovel)}</p>
+        </div>
+        <div class="metric">
+          <p class="metric-label">Entrada</p>
+          <p class="metric-value">${fmt(entrada)}</p>
+          <p class="metric-sub">${pctEntrada.toFixed(1).replace('.',',')}% do valor</p>
+        </div>
+        <div class="metric metric-a">
+          <p class="metric-label">Saldo A (${pctA.toFixed(0)}%)</p>
+          <p class="metric-value">${fmt(valorSaldoA)}</p>
+          <p class="metric-sub">Líquido (−entrada): ${fmt(saldoALiquido)}</p>
+        </div>
+        ${pctB > 0 ? `<div class="metric metric-b">
+          <p class="metric-label">Saldo B (${pctB.toFixed(0)}%)</p>
+          <p class="metric-value">${fmt(valorSaldoB)}</p>
+          <p class="metric-sub">A financiar com juros</p>
+        </div>` : ''}
+      </div>
+
+      <div class="divider"></div>
+      <p class="sub-header-a">SALDO A · durante a obra · sem juros</p>
+      <div class="results-grid">
+        <div class="metric metric-a">
+          <p class="metric-label">Parcela mensal</p>
+          <p class="metric-value">${fmt(parcelaSemReforcoA)}</p>
+          <p class="metric-sub">${qtdParcelasA} parcelas</p>
+        </div>
+    `;
+
+    reforcosA.forEach((r, i) => {
+      if (r.qty > 0 || r.val > 0) {
+        const saldo = saldoALiquido - r.total;
+        const parcela = qtdParcelasA > 0 ? saldo / qtdParcelasA : 0;
+        htmlResult += `
+        <div class="metric metric-a">
+          <p class="metric-label">Parcela c/ reforço – Opção ${i+1}</p>
+          <p class="metric-value">${fmt(parcela)}</p>
+          <p class="metric-sub">${r.qty}x de ${fmt(r.val)}</p>
+        </div>`;
+      }
+    });
+
+    htmlResult += `</div>`;
+
+    if (pctB > 0) {
+      const labelSaldoBHeader = metodoB === 'corbetta'
+        ? 'SALDO B · após entrega · tabela Corbetta'
+        : 'SALDO B · após entrega · com juros (tabela price)';
+      htmlResult += `
+      <div class="divider"></div>
+      <p class="sub-header-b">${labelSaldoBHeader}</p>
+      <div class="results-grid">
+        <div class="metric metric-b">
+          <p class="metric-label">Parcela mensal</p>
+          <p class="metric-value">${fmt(parcelaSemReforcoB)}</p>
+          <p class="metric-sub">${labelMetodoB}</p>
+        </div>`;
+
+      reforcosB.forEach((r, i) => {
+        if (r.qty > 0 || r.val > 0) {
+          const red = metodoB === 'corbetta'
+            ? reducaoReforco(r.val, prazoCorbetta)
+            : r.total / qtdParcelasExibB;
+          const parcela = parcelaSemReforcoB - red;
+          htmlResult += `
+        <div class="metric metric-b">
+          <p class="metric-label">Parcela c/ reforço – Opção ${i+1}</p>
+          <p class="metric-value">${fmt(parcela)}</p>
+          <p class="metric-sub">${r.qty}x de ${fmt(r.val)}</p>
+        </div>`;
+        }
+      });
+
+      htmlResult += `</div>`;
+
+      if (metodoB === 'corbetta') {
+        const mesesAnt = prazoCorbetta;
+        const indice = 1 / (1 + 0.0075 * mesesAnt);
+        const ultimaComDesconto = parcelaSemReforcoB * indice;
+        const valorDesconto = parcelaSemReforcoB - ultimaComDesconto;
+        const exibirNoWpp = document.getElementById('desconto-ultima-check').checked;
+        const flagLabel = exibirNoWpp ? '✅ Exibir no WhatsApp' : '☐ Exibir no WhatsApp';
+        htmlResult += `
+      <div class="divider"></div>
+      <p class="sub-header-b" style="font-size:11px; color:#854F0B;">DESCONTO NA ÚLTIMA PARCELA · antecipação (tabela Corbetta)
+        <span style="font-size:11px; color:#888; font-weight:400; margin-left:12px; cursor:pointer;"
+          onclick="document.getElementById('desconto-ultima-check').checked=!document.getElementById('desconto-ultima-check').checked; calcular();"
+          id="flag-wpp-label">${flagLabel}</span>
+      </p>
+      <div class="results-grid">
+        <div class="metric metric-b">
+          <p class="metric-label">Parcela mensal (sem desconto)</p>
+          <p class="metric-value">${fmt(parcelaSemReforcoB)}</p>
+          <p class="metric-sub">${prazoCorbetta} meses · tabela Corbetta</p>
+        </div>
+        <div class="metric metric-b">
+          <p class="metric-label">Parcela c/ desconto (antecipada)</p>
+          <p class="metric-value">${fmt(ultimaComDesconto)}</p>
+          <p class="metric-sub">${mesesAnt} meses antecipados · índice ${indice.toFixed(6).replace('.',',')}</p>
+        </div>
+        <div class="metric">
+          <p class="metric-label">Valor total do desconto</p>
+          <p class="metric-value">${fmt(valorDesconto)}</p>
+          <p class="metric-sub">economia na última parcela</p>
+        </div>
+      </div>`;
+      }
+    }
+
+    const notaSaldoB = metodoB === 'corbetta'
+      ? 'Saldo B calculado pela tabela Corbetta.'
+      : 'Saldo B calculado pela tabela Price.';
+    htmlResult += `<p class="info-note">ℹ️ Saldo A corrigido pelo CUB mês a mês (não incluído neste cálculo). ${notaSaldoB}</p>`;
+    document.getElementById('resultado-content').innerHTML = htmlResult;
+
+    // WhatsApp
+    const nomeCliente = document.getElementById('nome-cliente').value.trim();
+    const nomeEmp = document.getElementById('nome-empreendimento').value.trim();
+    const linhas = [
+      '🏠 *Simulação de Parcelamento*',
+      ...(nomeCliente ? [`👤 *Cliente:* ${nomeCliente}`] : []),
+      ...(nomeEmp    ? [`🏢 *Empreendimento:* ${nomeEmp}`] : []),
+      '',
+      `💰 *Valor do imóvel:* ${fmt(valorImovel)}`,
+      `🔑 *Entrada:* ${fmt(entrada)} (${pctEntrada.toFixed(1).replace('.',',')}% do valor)`,
+      '',
+      '─────────────────────────',
+    ];
+
+    if (pctA > 0) {
+      if (pctB > 0) linhas.push(`📋 *Saldo A – Durante a obra (${pctA.toFixed(0)}%)*`);
+      linhas.push(`Valor: ${fmt(valorSaldoA)}`);
+      linhas.push(`Saldo líquido (após entrada): ${fmt(saldoALiquido)}`);
+      linhas.push(`Parcelas: ${qtdParcelasA}x`);
+      linhas.push(`• Parcela mensal: *${fmt(parcelaSemReforcoA)}*`);
+      reforcosA.forEach((r) => {
+        if (r.checked && (r.qty > 0 || r.val > 0)) {
+          const saldo = saldoALiquido - r.total;
+          const parcela = qtdParcelasA > 0 ? saldo / qtdParcelasA : 0;
+          linhas.push(`• Reforço ${r.qty}x de ${fmt(r.val)}: parcela *${fmt(parcela)}*/mês`);
+        }
+      });
+    }
+
+    if (pctB > 0) {
+      if (pctA > 0) { linhas.push(''); linhas.push('─────────────────────────'); }
+      if (pctA > 0) linhas.push(`🏗️ *Saldo B – Após entrega (${pctB.toFixed(0)}%)*`);
+      const saldoBLiquido = pctA === 0 ? valorSaldoB - entrada : valorSaldoB;
+      const parcelaBLiquida = pctA === 0
+        ? (metodoB === 'corbetta' ? saldoBLiquido * (tabelaCorbetta[prazoCorbetta] / baseCorbetta) : price(saldoBLiquido, taxaJuros, qtdParcelasB))
+        : parcelaSemReforcoB;
+      if (pctA === 0) linhas.push(`Saldo a financiar (imóvel − entrada): *${fmt(saldoBLiquido)}*`);
+      else linhas.push(`Valor: ${fmt(valorSaldoB)}`);
+      linhas.push(`Parcelas: ${qtdParcelasExibB}x`);
+      linhas.push(`• Parcela mensal: *${fmt(parcelaBLiquida)}*`);
+      reforcosB.forEach((r) => {
+        if (r.checked && (r.qty > 0 || r.val > 0)) {
+          const base = pctA === 0
+            ? (metodoB === 'corbetta' ? saldoBLiquido * (tabelaCorbetta[prazoCorbetta] / baseCorbetta) : price(saldoBLiquido, taxaJuros, qtdParcelasB))
+            : parcelaSemReforcoB;
+          const red = metodoB === 'corbetta'
+            ? reducaoReforco(r.val, prazoCorbetta)
+            : r.total / qtdParcelasExibB;
+          const descReforco = metodoB === 'corbetta'
+            ? `Reforço anual de ${fmt(r.val)} (${r.qty}x)`
+            : `Reforço ${r.qty}x de ${fmt(r.val)}`;
+          linhas.push(`• ${descReforco}: parcela *${fmt(base - red)}*/mês`);
+        }
+      });
+    }
+
+    linhas.push('');
+    if (pctA > 0) linhas.push(`📌 *Saldo A:* valores corrigidos mensalmente pelo CUB.`);
+    if (pctB > 0) {
+      const notaB = metodoB === 'corbetta'
+        ? `📌 *Saldo B:* até a data Base de Entrega do Edifício, correção pelo CUB e após INPC mais JUROS de 0,75% a.m.`
+        : `📌 *Saldo B:* valor até a entrega do empreendimento corrigido pelo CUB e, após a entrega, INPC + juros de ${(taxaJuros*100).toFixed(2).replace('.',',')}% a.m., ou financiamento bancário.`;
+      linhas.push(notaB);
+    }
+    if (pctA === 0 && pctB === 0) linhas.push(`📌 Valores corrigidos mensalmente pelo CUB.`);
+
+    if (pctB > 0 && metodoB === 'corbetta' && document.getElementById('desconto-ultima-check').checked) {
+      const mesesAnt = prazoCorbetta;
+      const indice = 1 / (1 + 0.0075 * mesesAnt);
+      const ultimaComDesconto = parcelaSemReforcoB * indice;
+      const valorDesconto = parcelaSemReforcoB - ultimaComDesconto;
+      linhas.push('');
+      linhas.push('─────────────────────────');
+      linhas.push(`💡 *Desconto na última parcela (antecipação Corbetta)*`);
+      linhas.push(`• Parcela mensal: *${fmt(parcelaSemReforcoB)}*`);
+      linhas.push(`• Parcela c/ desconto (${mesesAnt}m antecipados): *${fmt(ultimaComDesconto)}*`);
+      linhas.push(`• Valor total do desconto: *${fmt(valorDesconto)}*`);
+    }
+
+    document.getElementById('wpp-texto').value = linhas.join('\n');
+    document.getElementById('section-whatsapp').style.display = 'block';
+  }
+
+  function copiarTexto() {
+    const ta = document.getElementById('wpp-texto');
+    ta.select();
+    document.execCommand('copy');
+    const fb = document.getElementById('copia-feedback');
+    fb.style.display = 'inline';
+    setTimeout(() => { fb.style.display = 'none'; }, 2000);
+  }
+
+  function exportarPDF() {
+    window.print();
+  }
+
+  let historicoAberto = false;
+  function toggleHistorico() {
+    historicoAberto = !historicoAberto;
+    document.getElementById('historico-lista').style.display = historicoAberto ? 'block' : 'none';
+    document.getElementById('historico-toggle-icon').textContent = historicoAberto ? '▲' : '▼';
+    if (historicoAberto) renderHistorico();
+  }
+
+  function salvarNoHistorico() {
+    const estado = capturarEstadoCompleto();
+    const cliente = (document.getElementById('nome-cliente').value || '').trim() || 'Sem nome';
+    const emp = (document.getElementById('nome-empreendimento').value || '').trim() || 'Sem empreendimento';
+    const agora = new Date();
+    const data = agora.toLocaleDateString('pt-BR') + ' ' + agora.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+    const resumo = estado['valor-imovel'] ? `R$ ${estado['valor-imovel']}` : '';
+    const entrada = { id: Date.now(), data, cliente, emp, resumo, estado };
+    const raw = localStorage.getItem('simulador_historico');
+    const hist = raw ? JSON.parse(raw) : [];
+    hist.unshift(entrada);
+    if (hist.length > 10) hist.pop();
+    localStorage.setItem('simulador_historico', JSON.stringify(hist));
+    const fb = document.getElementById('salvo-feedback');
+    fb.style.display = 'inline';
+    setTimeout(() => { fb.style.display = 'none'; }, 2000);
+    if (historicoAberto) renderHistorico();
+  }
+
+  function renderHistorico() {
+    const raw = localStorage.getItem('simulador_historico');
+    const hist = raw ? JSON.parse(raw) : [];
+    const lista = document.getElementById('historico-lista');
+    if (!hist.length) {
+      lista.innerHTML = '<p class="hist-empty">Nenhuma simulação salva ainda.</p>';
+      return;
+    }
+    lista.innerHTML = hist.map(h => `
+      <div class="hist-card" id="hist-${h.id}">
+        <div class="hist-info">
+          <div class="hist-title">${h.cliente} — ${h.emp}</div>
+          <div class="hist-sub">${h.data}${h.resumo ? ' · ' + h.resumo : ''}</div>
+        </div>
+        <div class="hist-actions">
+          <button class="hist-btn" onclick="restaurarDoHistorico(${h.id})">Restaurar</button>
+          <button class="hist-btn hist-btn-del" onclick="deletarDoHistorico(${h.id})">✕</button>
+        </div>
+      </div>`).join('');
+  }
+
+  function restaurarDoHistorico(id) {
+    const raw = localStorage.getItem('simulador_historico');
+    const hist = raw ? JSON.parse(raw) : [];
+    const entrada = hist.find(h => h.id === id);
+    if (!entrada) return;
+    aplicarEstado(entrada.estado);
+    calcular();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function deletarDoHistorico(id) {
+    const raw = localStorage.getItem('simulador_historico');
+    let hist = raw ? JSON.parse(raw) : [];
+    hist = hist.filter(h => h.id !== id);
+    localStorage.setItem('simulador_historico', JSON.stringify(hist));
+    renderHistorico();
+  }
+
+  function getEl(id) { return document.getElementById(id); }
+
+  function capturarEstadoCompleto() {
+    const e = {};
+    ['valor-imovel','entrada-val','pct-saldo-a','qtd-parcelas-a','qtd-parcelas-b',
+     'taxa-juros','nome-cliente','nome-empreendimento'].forEach(id => {
+      const el = getEl(id); if (el) e[id] = el.value;
+    });
+    e['modo-entrada'] = modoEntrada;
+    e['modo-taxa']    = modoTaxa;
+    e['metodo-b']     = metodoB;
+    const pc = getEl('prazo-corbetta');     if (pc) e['prazo-corbetta'] = pc.value;
+    const tc = getEl('taxa-corbetta');      if (tc) e['taxa-corbetta']  = tc.value;
+    const dc = getEl('desconto-ultima-check'); if (dc) e['desconto-ultima-check'] = dc.checked;
+    const dm = getEl('desconto-ultima-meses'); if (dm) e['desconto-ultima-meses'] = dm.value;
+    for (const s of ['a','b']) {
+      for (let i = 1; i <= 4; i++) {
+        const chk = getEl(`ref-${s}-${i}-check`);
+        const qty = getEl(`ref-${s}-${i}-qty`);
+        const val = getEl(`ref-${s}-${i}-val`);
+        if (chk) e[`ref-${s}-${i}-check`] = chk.checked;
+        if (qty) e[`ref-${s}-${i}-qty`]   = qty.value;
+        if (val) e[`ref-${s}-${i}-val`]   = val.value;
+      }
+    }
+    return e;
+  }
+
+  function coletarEstado() { return capturarEstadoCompleto(); }
+
+  function aplicarEstado(e) {
+    ['valor-imovel','entrada-val','pct-saldo-a','qtd-parcelas-a','qtd-parcelas-b',
+     'taxa-juros','nome-cliente','nome-empreendimento'].forEach(id => {
+      const el = getEl(id); if (el && e[id] !== undefined) el.value = e[id];
+    });
+    if (e['modo-entrada']) {
+      modoEntrada = e['modo-entrada'];
+      getEl('btn-reais').classList.toggle('active', modoEntrada === 'reais');
+      getEl('btn-pct').classList.toggle('active', modoEntrada === 'pct');
+      getEl('entrada-prefixo').textContent = modoEntrada === 'pct' ? '%' : 'R$';
+    }
+    if (e['modo-taxa']) {
+      modoTaxa = e['modo-taxa'];
+      getEl('btn-mensal').classList.toggle('active', modoTaxa === 'mensal');
+      getEl('btn-anual').classList.toggle('active', modoTaxa === 'anual');
+    }
+    const mb = e['metodo-b'] || 'price';
+    metodoB = mb;
+    getEl('btn-metodo-price').classList.toggle('active', mb === 'price');
+    getEl('btn-metodo-corbetta').classList.toggle('active', mb === 'corbetta');
+    const _s = (id, v) => { const el = getEl(id); if (el) el.style.display = v; };
+    _s('field-taxa-juros',     mb === 'price'    ? '' : 'none');
+    _s('field-qtd-parcelas-b', mb === 'price'    ? '' : 'none');
+    _s('field-prazo-corbetta', mb === 'corbetta' ? '' : 'none');
+    _s('field-taxa-corbetta',  mb === 'corbetta' ? '' : 'none');
+    _s('field-desconto-ultima',mb === 'corbetta' ? '' : 'none');
+    const pc = getEl('prazo-corbetta');     if (pc && e['prazo-corbetta']) pc.value = e['prazo-corbetta'];
+    const tc = getEl('taxa-corbetta');      if (tc && e['taxa-corbetta'])  tc.value = e['taxa-corbetta'];
+    const dc = getEl('desconto-ultima-check'); if (dc && e['desconto-ultima-check'] !== undefined) dc.checked = e['desconto-ultima-check'];
+    const dm = getEl('desconto-ultima-meses'); if (dm && e['desconto-ultima-meses'] !== undefined) dm.value  = e['desconto-ultima-meses'];
+    for (const s of ['a','b']) {
+      for (let i = 1; i <= 4; i++) {
+        const chk = getEl(`ref-${s}-${i}-check`);
+        const qty = getEl(`ref-${s}-${i}-qty`);
+        const val = getEl(`ref-${s}-${i}-val`);
+        if (chk && e[`ref-${s}-${i}-check`] !== undefined) chk.checked = e[`ref-${s}-${i}-check`];
+        if (qty && e[`ref-${s}-${i}-qty`]   !== undefined) qty.value   = e[`ref-${s}-${i}-qty`];
+        if (val && e[`ref-${s}-${i}-val`]   !== undefined) val.value   = e[`ref-${s}-${i}-val`];
+      }
+    }
+  }
+
+  function salvarEstado() {
+    try { localStorage.setItem('simulador_imovel_auto', JSON.stringify(capturarEstadoCompleto())); } catch(err) { console.error('salvarEstado:', err); }
+  }
+
+  function restaurarEstado() {
+    const raw = localStorage.getItem('simulador_imovel_auto');
+    if (!raw) return;
+    try { aplicarEstado(JSON.parse(raw)); } catch(err) { console.error('restaurarEstado:', err); }
+  }
+
+  function salvarSimulacao() {
+    try {
+      const estado = capturarEstadoCompleto();
+      localStorage.setItem('simulador_imovel_salvo', JSON.stringify(estado));
+      localStorage.setItem('simulador_imovel_salvo_data', new Date().toLocaleString('pt-BR'));
+      mostrarStatusSave('✅ Simulação salva!');
+    } catch(err) { mostrarStatusSave('❌ Erro ao salvar'); console.error(err); }
+  }
+
+  function carregarSimulacao() {
+    const raw = localStorage.getItem('simulador_imovel_salvo');
+    if (!raw) { mostrarStatusSave('Nenhuma simulação salva encontrada'); return; }
+    try {
+      aplicarEstado(JSON.parse(raw));
+      calcular();
+      const data = localStorage.getItem('simulador_imovel_salvo_data') || '';
+      mostrarStatusSave('↩ Restaurado · ' + data);
+    } catch(err) { mostrarStatusSave('❌ Erro ao restaurar'); console.error(err); }
+  }
+
+  function mostrarStatusSave(msg) {
+    const el = document.getElementById('save-status');
+    if (!el) return;
+    el.textContent = msg;
+    clearTimeout(el._t);
+    el._t = setTimeout(() => { el.textContent = ''; }, 4000);
+  }
+
+  const calcularOriginal = calcular;
+  calcular = function() { try { calcularOriginal(); } finally { salvarEstado(); } };
+
+  window.addEventListener('beforeunload', salvarEstado);
+  window.addEventListener('pagehide', salvarEstado);
+
+  restaurarEstado();
+
+  // Pre-preencher via URL params: ?cliente=João&empreendimento=Horizonte&leadId=abc123
+  (function() {
+    const params = new URLSearchParams(window.location.search);
+    const cliente = params.get('cliente');
+    const emp = params.get('empreendimento');
+    const leadId = params.get('leadId');
+    if (cliente) { const el = getEl('nome-cliente'); if (el) el.value = cliente; }
+    if (emp)     { const el = getEl('nome-empreendimento'); if (el) el.value = emp; }
+    if (leadId)  { window._crmLeadId = leadId; }
+  })();
+
+  calcular();
+
+  // Mostrar data da última simulação salva ao carregar
+  (function() {
+    const data = localStorage.getItem('simulador_imovel_salvo_data');
+    if (data) mostrarStatusSave('Última salva: ' + data);
+  })();
+</script>
+
+</body>
+</html>
