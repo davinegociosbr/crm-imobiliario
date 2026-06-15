@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Users, Kanban, Building2, Calendar,
   FileText, Key, TrendingUp, DollarSign, CheckSquare,
   BarChart3, Settings, LogOut, ChevronLeft, ChevronRight,
-  MessageCircle, CalendarDays, Wallet,
+  MessageCircle, CalendarDays, Wallet, Calculator,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth.store';
@@ -27,6 +27,7 @@ const navItems = [
   { href: '/financeiro', label: 'Financeiro', icon: Wallet },
   { href: '/tasks', label: 'Tarefas', icon: CheckSquare },
   { href: '/reports', label: 'Relatórios', icon: BarChart3 },
+  { href: '/simulacao', label: 'Simulação', icon: Calculator },
   { href: '/settings', label: 'Configurações', icon: Settings },
 ];
 
