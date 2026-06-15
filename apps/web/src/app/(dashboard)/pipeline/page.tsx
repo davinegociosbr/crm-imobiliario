@@ -972,10 +972,14 @@ export default function PipelinePage() {
                 return true;
               })
               .sort((a: any, b: any) => {
-                if (!sort) return 0;
+                if (sort === null) return 0;
                 if (sort === 'alpha') return a.name.localeCompare(b.name, 'pt-BR');
+                // Sem data vai sempre para o final
                 const da = a.nextContactAt ? new Date(a.nextContactAt).getTime() : Infinity;
                 const db = b.nextContactAt ? new Date(b.nextContactAt).getTime() : Infinity;
+                if (da === Infinity && db === Infinity) return 0;
+                if (da === Infinity) return 1;
+                if (db === Infinity) return -1;
                 return sort === 'date-asc' ? da - db : db - da;
               });
 
