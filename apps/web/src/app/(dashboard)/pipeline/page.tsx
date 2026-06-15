@@ -629,11 +629,11 @@ function LeadCard({ lead, index, onOpen }: { lead: any; index: number; onOpen: (
           {...provided.dragHandleProps}
           className={`rounded-lg p-2.5 border shadow-sm cursor-grab active:cursor-grabbing transition-all ${
             snapshot.isDragging
-              ? 'bg-white dark:bg-slate-800 shadow-lg ring-2 ring-blue-500 border-blue-400'
+              ? 'bg-white dark:bg-slate-700 shadow-lg ring-2 ring-blue-500 border-blue-400'
               : isOverdue
-              ? 'bg-red-50 dark:bg-red-950/20 border-red-400 dark:border-red-600 shadow-red-100 dark:shadow-red-900/20 animate-pulse-border'
+              ? 'bg-red-50 dark:bg-red-900/40 border-red-400 dark:border-red-500 shadow-red-100 dark:shadow-red-900/20 animate-pulse-border'
               : noDate
-              ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-300 dark:border-amber-700 shadow-amber-100 dark:shadow-amber-900/20'
+              ? 'bg-amber-50 dark:bg-amber-900/30 border-amber-300 dark:border-amber-600 shadow-amber-100 dark:shadow-amber-900/20'
               : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:shadow-md'
           }`}
           onClick={() => !snapshot.isDragging && onOpen(lead)}
@@ -650,8 +650,8 @@ function LeadCard({ lead, index, onOpen }: { lead: any; index: number; onOpen: (
             ) : (
               <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded shrink-0 ${
                 noDate
-                  ? 'bg-amber-200 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
-                  : 'bg-green-50 text-green-700 dark:bg-green-950/30'
+                  ? 'bg-amber-200 text-amber-800 dark:bg-amber-700/50 dark:text-amber-200'
+                  : 'bg-green-50 text-green-700 dark:bg-green-800/40 dark:text-green-300'
               }`}>
                 {nextContact
                   ? nextContact.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })
@@ -676,7 +676,7 @@ function LeadCard({ lead, index, onOpen }: { lead: any; index: number; onOpen: (
             <a
               href={`tel:${lead.phone}`}
               onClick={e => e.stopPropagation()}
-              className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 text-[10px] font-medium"
+              className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-800/50 text-[10px] font-medium"
             >
               <Phone className="w-2.5 h-2.5" /> Ligar
             </a>
@@ -685,7 +685,7 @@ function LeadCard({ lead, index, onOpen }: { lead: any; index: number; onOpen: (
                 href={`https://web.whatsapp.com/send?phone=55${lead.whatsapp?.replace(/\D/g, '')}&text=${encodeURIComponent(`Olá ${lead.name.split(' ')[0]}, tudo bem? Passando para dar um retorno sobre o atendimento. Podemos conversar?`)}`}
                 target="whatsapp_web"
                 onClick={e => e.stopPropagation()}
-                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-green-50 text-green-600 hover:bg-green-100 text-[10px] font-medium"
+                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-green-50 dark:bg-green-900/40 text-green-600 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-800/50 text-[10px] font-medium"
               >
                 <MessageCircle className="w-2.5 h-2.5" /> WA
               </a>
@@ -694,7 +694,7 @@ function LeadCard({ lead, index, onOpen }: { lead: any; index: number; onOpen: (
               <button
                 onClick={handleDelete}
                 title="Excluir lead"
-                className="w-5 h-5 rounded bg-red-50 dark:bg-red-950/30 text-red-400 hover:bg-red-100 hover:text-red-600 flex items-center justify-center ml-1 transition-colors"
+                className="w-5 h-5 rounded bg-red-50 dark:bg-red-900/40 text-red-400 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-800/50 hover:text-red-600 flex items-center justify-center ml-1 transition-colors"
               >
                 <Trash2 className="w-3 h-3" />
               </button>
