@@ -144,6 +144,30 @@ enum MaritalStatus {
   STABLE_UNION
 }
 
+enum FinancialType {
+  RECEIVABLE
+  PAYABLE
+}
+
+enum FinancialStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum FinancialCategory {
+  COMMISSION
+  RENT
+  SALE
+  SERVICE
+  TAX
+  SALARY
+  MARKETING
+  INFRASTRUCTURE
+  OTHER
+}
+
 // ==================== MODELS ====================
 
 model Company {
@@ -163,12 +187,13 @@ model Company {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  users        User[]
-  leads        Lead[]
-  properties   Property[]
-  tasks        Task[]
-  automations  Automation[]
-  auditLogs    AuditLog[]
+  users             User[]
+  leads             Lead[]
+  properties        Property[]
+  tasks             Task[]
+  automations       Automation[]
+  auditLogs         AuditLog[]
+  financialEntries  FinancialEntry[]
 
   @@map("companies")
 }
@@ -232,14 +257,15 @@ model Lead {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  company      Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  assignedUser User?        @relation("AssignedLeads", fields: [assignedUserId], references: [id])
-  activities   Activity[]
-  visits       Visit[]
-  proposals    Proposal[]
-  reservations Reservation[]
-  sales        Sale[]
-  tasks        Task[]
+  company          Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  assignedUser     User?            @relation("AssignedLeads", fields: [assignedUserId], references: [id])
+  activities       Activity[]
+  visits           Visit[]
+  proposals        Proposal[]
+  reservations     Reservation[]
+  sales            Sale[]
+  tasks            Task[]
+  financialEntries FinancialEntry[]
 
   @@index([companyId])
   @@index([assignedUserId])
@@ -387,10 +413,11 @@ model Sale {
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
 
-  lead        Lead        @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  property    Property    @relation(fields: [propertyId], references: [id])
-  user        User        @relation(fields: [userId], references: [id])
-  commissions Commission[]
+  lead             Lead             @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  property         Property         @relation(fields: [propertyId], references: [id])
+  user             User             @relation(fields: [userId], references: [id])
+  commissions      Commission[]
+  financialEntries FinancialEntry[]
 
   @@index([userId])
   @@index([soldAt])
@@ -480,6 +507,34 @@ model AuditLog {
   @@index([entity])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+model FinancialEntry {
+  id          String            @id @default(cuid())
+  companyId   String
+  type        FinancialType
+  category    FinancialCategory @default(OTHER)
+  description String
+  amount      Decimal           @db.Decimal(15, 2)
+  dueDate     DateTime
+  paidAt      DateTime?
+  status      FinancialStatus   @default(PENDING)
+  contactName String?
+  notes       String?
+  leadId      String?
+  saleId      String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  lead    Lead?   @relation(fields: [leadId], references: [id])
+  sale    Sale?   @relation(fields: [saleId], references: [id])
+
+  @@index([companyId])
+  @@index([type])
+  @@index([status])
+  @@index([dueDate])
+  @@map("financial_entries")
 }
 
 model Notification {
