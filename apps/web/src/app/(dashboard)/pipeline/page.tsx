@@ -958,7 +958,7 @@ export default function PipelinePage() {
           {visibleStages.map((stage) => {
             const stageInfo = allStageInfo[stage] || { label: stage, color: 'bg-slate-500' };
             const color = stageColors[stage] || stageInfo.color;
-            const sort = columnSorts[stage];
+            const sort = stage in columnSorts ? columnSorts[stage] : 'date-asc';
             const leads = (kanban?.[stage] || [])
               .filter((lead: any) => {
                 if (search) {
