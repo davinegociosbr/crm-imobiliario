@@ -153,7 +153,7 @@ export class ExportService {
       return stage;
     };
 
-    const [allLeads, properties, visits, proposals, reservations, sales, commissions, tasks, activities] = await Promise.all([
+    const [allLeads, properties, visits, proposals, reservations, sales, commissions, tasks, activities, financialEntries] = await Promise.all([
       this.prisma.lead.findMany({ where: { companyId }, include: { assignedUser: { select: { name: true } } }, orderBy: { createdAt: 'desc' } }),
       this.prisma.property.findMany({ where: { companyId }, orderBy: { createdAt: 'asc' } }),
       this.prisma.visit.findMany({ where: { lead: { companyId } }, include: { lead: { select: { name: true } }, property: { select: { name: true, code: true } }, user: { select: { name: true } } }, orderBy: { scheduledAt: 'asc' } }),
@@ -163,6 +163,7 @@ export class ExportService {
       this.prisma.commission.findMany({ where: { sale: { lead: { companyId } } }, include: { sale: { include: { lead: { select: { name: true } }, property: { select: { name: true } } } }, user: { select: { name: true } } }, orderBy: { createdAt: 'asc' } }),
       this.prisma.task.findMany({ where: { companyId }, include: { assignedUser: { select: { name: true } }, lead: { select: { name: true } } }, orderBy: { createdAt: 'asc' } }),
       this.prisma.activity.findMany({ where: { lead: { companyId } }, include: { user: { select: { name: true } }, lead: { select: { name: true } } }, orderBy: { createdAt: 'asc' } }),
+      this.prisma.financialEntry.findMany({ where: { companyId }, orderBy: { dueDate: 'asc' } }),
     ]);
 
     // Deduplica leads por telefone (mantém o mais recente de cada número)
@@ -443,6 +444,43 @@ export class ExportService {
     styleHeader(wsAct, 'FF0F172A');
     styleDataRows(wsAct);
     autoWidth(wsAct);
+
+    // ── ABA 9: FINANCEIRO ────────────────────────────────────────────────────
+    const FINANCIAL_TYPE_PT: Record<string, string> = { RECEIVABLE: 'A Receber', PAYABLE: 'A Pagar' };
+    const FINANCIAL_STATUS_PT: Record<string, string> = { PENDING: 'Pendente', PAID: 'Pago', OVERDUE: 'Vencido', CANCELLED: 'Cancelado' };
+    const FINANCIAL_CATEGORY_PT: Record<string, string> = {
+      COMMISSION: 'Comissão', RENT: 'Aluguel', SALE: 'Venda', SERVICE: 'Serviço',
+      TAX: 'Imposto', SALARY: 'Salário', MARKETING: 'Marketing', INFRASTRUCTURE: 'Infraestrutura', OTHER: 'Outros',
+    };
+
+    const wsFinancial = wb.addWorksheet('Financeiro', { properties: { tabColor: { argb: 'FF16A34A' } } });
+    wsFinancial.columns = [
+      { header: 'Tipo',        key: 'type' },
+      { header: 'Categoria',   key: 'category' },
+      { header: 'Descrição',   key: 'description' },
+      { header: 'Contato',     key: 'contactName' },
+      { header: 'Valor (R$)', key: 'amount' },
+      { header: 'Vencimento',  key: 'dueDate' },
+      { header: 'Status',      key: 'status' },
+      { header: 'Pago em',     key: 'paidAt' },
+      { header: 'Observações', key: 'notes' },
+      { header: 'Cadastro',    key: 'createdAt' },
+    ];
+    financialEntries.forEach((f) => wsFinancial.addRow({
+      type: FINANCIAL_TYPE_PT[f.type] || f.type,
+      category: FINANCIAL_CATEGORY_PT[f.category] || f.category,
+      description: f.description,
+      contactName: f.contactName || '',
+      amount: currency(f.amount),
+      dueDate: ptDate(f.dueDate),
+      status: FINANCIAL_STATUS_PT[f.status] || f.status,
+      paidAt: ptDate(f.paidAt),
+      notes: f.notes || '',
+      createdAt: ptDate(f.createdAt),
+    }));
+    styleHeader(wsFinancial, 'FF059669');
+    styleDataRows(wsFinancial);
+    autoWidth(wsFinancial);
 
     return wb.xlsx.writeBuffer();
   }

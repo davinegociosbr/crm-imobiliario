@@ -54,7 +54,9 @@ export class BackupService {
     const startOfDay = new Date(now); startOfDay.setHours(0, 0, 0, 0);
     const endOfDay   = new Date(now); endOfDay.setHours(23, 59, 59, 999);
 
-    const [totalLeads, overdueLeads, todayLeads] = await Promise.all([
+    const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    const [totalLeads, overdueLeads, todayLeads, financialEntries] = await Promise.all([
       this.prisma.lead.count({ where: { companyId, status: { notIn: ['WON', 'LOST'] } } }),
       this.prisma.lead.findMany({
         where: { companyId, nextContactAt: { lt: startOfDay }, status: { notIn: ['WON', 'LOST'] } },
@@ -66,7 +68,50 @@ export class BackupService {
         select: { id: true, name: true, phone: true, whatsapp: true, nextAction: true, nextContactAt: true },
         orderBy: { nextContactAt: 'asc' }, take: 20,
       }),
+      this.prisma.financialEntry.findMany({
+        where: { companyId, status: { not: 'CANCELLED' } },
+        select: { type: true, status: true, amount: true, dueDate: true, description: true, contactName: true },
+      }),
     ]);
+
+    // Resumo financeiro
+    const now2 = new Date();
+    let pendingReceivable = 0, overdueReceivable = 0, pendingPayable = 0, overduePayable = 0;
+    const overdueFinancial: typeof financialEntries = [];
+    for (const f of financialEntries) {
+      const amt = Number(f.amount);
+      const isOverdue = f.status === 'PENDING' && f.dueDate < now2;
+      if (f.type === 'RECEIVABLE' && f.status === 'PENDING') {
+        pendingReceivable += amt;
+        if (isOverdue) { overdueReceivable += amt; overdueFinancial.push(f); }
+      }
+      if (f.type === 'PAYABLE' && f.status === 'PENDING') {
+        pendingPayable += amt;
+        if (isOverdue) overduePayable += amt;
+      }
+    }
+
+    const financialSection = `
+      <h3 style="color:#059669;margin:20px 0 8px">💰 Resumo Financeiro</h3>
+      <div style="display:flex;gap:12px;margin-bottom:12px">
+        <div style="flex:1;background:white;border:1px solid #bbf7d0;border-radius:8px;padding:12px;text-align:center">
+          <p style="font-size:18px;font-weight:bold;color:#059669;margin:0">${fmt(pendingReceivable)}</p>
+          <p style="font-size:11px;color:#64748b;margin:4px 0 0">A Receber</p>
+        </div>
+        <div style="flex:1;background:white;border:1px solid #fecaca;border-radius:8px;padding:12px;text-align:center">
+          <p style="font-size:18px;font-weight:bold;color:#dc2626;margin:0">${fmt(pendingPayable)}</p>
+          <p style="font-size:11px;color:#64748b;margin:4px 0 0">A Pagar</p>
+        </div>
+        <div style="flex:1;background:white;border:1px solid ${overdueReceivable > 0 ? '#fde68a' : '#e2e8f0'};border-radius:8px;padding:12px;text-align:center">
+          <p style="font-size:18px;font-weight:bold;color:${overdueReceivable > 0 ? '#d97706' : '#94a3b8'};margin:0">${fmt(overdueReceivable)}</p>
+          <p style="font-size:11px;color:#64748b;margin:4px 0 0">Receber Vencido</p>
+        </div>
+      </div>
+      ${overdueFinancial.length > 0 ? `
+        <p style="color:#d97706;font-size:12px;margin:4px 0 8px">⚠️ ${overdueFinancial.length} conta(s) a receber vencida(s):</p>
+        <ul style="margin:0 0 12px;padding-left:20px;font-size:12px;color:#64748b">
+          ${overdueFinancial.slice(0, 5).map(f => `<li>${f.description}${f.contactName ? ` — ${f.contactName}` : ''}: <strong>${fmt(Number(f.amount))}</strong></li>`).join('')}
+        </ul>` : ''}`;
 
     const waMsg = encodeURIComponent('Olá, tudo bem? Passando para dar um retorno sobre o atendimento. Podemos conversar?');
 
@@ -136,6 +181,7 @@ export class BackupService {
             </div>
             ${overdueSection}
             ${todaySection}
+            ${financialSection}
             <p style="color:#64748b;font-size:12px;margin-top:24px;border-top:1px solid #e2e8f0;padding-top:12px">
               📎 O backup completo dos seus dados está em anexo.<br>
               Este e-mail é enviado automaticamente todo dia às 04:00 (horário de Brasília).
