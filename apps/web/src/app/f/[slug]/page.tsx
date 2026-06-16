@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation';
 import { CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001') + '/api/v1';
 
 const ORIGINS = [
   { value: 'INSTAGRAM', label: 'Instagram' },
