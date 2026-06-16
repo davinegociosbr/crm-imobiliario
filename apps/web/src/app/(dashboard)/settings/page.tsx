@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
-import { UserPlus, Download, FileJson, FileText, Loader2, Mail, Puzzle, Chrome, CheckCircle2, AlertCircle, Kanban, Trash2, Pencil, Plus, Check, GripVertical } from 'lucide-react';
+import { UserPlus, Download, FileJson, FileText, Loader2, Mail, Puzzle, Chrome, CheckCircle2, AlertCircle, Kanban, Trash2, Pencil, Plus, Check, GripVertical, Link2, Copy, ExternalLink } from 'lucide-react';
 import { PIPELINE_STAGES } from '@/lib/utils';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 
@@ -49,6 +49,7 @@ export default function SettingsPage() {
           { id: 'backup', label: 'Backup' },
           { id: 'extension', label: 'Extensão' },
           { id: 'pipeline', label: 'Funil' },
+          { id: 'form', label: 'Formulário' },
           { id: 'audit', label: 'Auditoria' },
         ].map((t) => (
           <button key={t.id} onClick={() => setTab(t.id)} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === t.id ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}>{t.label}</button>
@@ -145,6 +146,8 @@ export default function SettingsPage() {
       {tab === 'extension' && <ExtensionTab />}
 
       {tab === 'pipeline' && <PipelineTab company={company} onSaved={() => qc.invalidateQueries({ queryKey: ['company'] })} />}
+
+      {tab === 'form' && <FormTab company={company} users={users || []} onSaved={() => qc.invalidateQueries({ queryKey: ['company'] })} />}
 
       {tab === 'audit' && <AuditTab />}
     </div>
@@ -623,6 +626,177 @@ function ExtensionTab() {
           </p>
         </div>
       </div>
+    </div>
+  );
+}
+
+const FORM_FIELD_OPTIONS = [
+  { value: 'name',     label: 'Nome completo', required: true },
+  { value: 'phone',    label: 'Telefone / WhatsApp', required: true },
+  { value: 'email',    label: 'E-mail' },
+  { value: 'interest', label: 'O que procura?' },
+  { value: 'city',     label: 'Cidade' },
+  { value: 'origin',   label: 'Como nos conheceu?' },
+  { value: 'notes',    label: 'Mensagem' },
+];
+
+function FormTab({ company, users, onSaved }: { company: any; users: any[]; onSaved: () => void }) {
+  const settings: any = company?.settings || {};
+  const appUrl = typeof window !== 'undefined' ? window.location.origin : '';
+
+  const [slug, setSlug] = useState(settings.formSlug || '');
+  const [title, setTitle] = useState(settings.formTitle || '');
+  const [subtitle, setSubtitle] = useState(settings.formSubtitle || '');
+  const [thankYou, setThankYou] = useState(settings.formThankYou || '');
+  const [color, setColor] = useState(settings.formColor || '#2563eb');
+  const [assignedUserId, setAssignedUserId] = useState(settings.formAssignedUserId || '');
+  const [fields, setFields] = useState<string[]>(settings.formFields || ['name', 'phone', 'email', 'interest', 'origin']);
+  const [saving, setSaving] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const formUrl = slug ? `${appUrl}/f/${slug}` : '';
+
+  function toggleField(f: string) {
+    if (['name', 'phone'].includes(f)) return;
+    setFields(prev => prev.includes(f) ? prev.filter(x => x !== f) : [...prev, f]);
+  }
+
+  function copyLink() {
+    navigator.clipboard.writeText(formUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  async function save() {
+    if (!slug) { toast.error('Defina um slug para o formulário'); return; }
+    setSaving(true);
+    try {
+      await api.put('/company', {
+        settings: {
+          ...settings,
+          formSlug: slug.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
+          formTitle: title,
+          formSubtitle: subtitle,
+          formThankYou: thankYou,
+          formColor: color,
+          formAssignedUserId: assignedUserId || null,
+          formFields: fields,
+        },
+      });
+      toast.success('Formulário salvo!');
+      onSaved();
+    } catch { toast.error('Erro ao salvar'); }
+    finally { setSaving(false); }
+  }
+
+  return (
+    <div className="space-y-5 max-w-2xl">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border p-6 space-y-5">
+        <div className="flex items-center gap-3 mb-1">
+          <div className="p-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg"><Link2 className="w-5 h-5 text-blue-600" /></div>
+          <div>
+            <h2 className="font-semibold text-slate-800 dark:text-white">Formulário Público de Captação</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Compartilhe o link e receba leads direto no funil</p>
+          </div>
+        </div>
+
+        {/* Slug / URL */}
+        <div>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Link do formulário *</label>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-slate-400 shrink-0">{appUrl}/f/</span>
+            <input
+              value={slug} onChange={e => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))}
+              placeholder="nome-da-empresa"
+              className="flex-1 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          {formUrl && (
+            <div className="mt-2 flex items-center gap-2 p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+              <span className="text-xs text-slate-600 dark:text-slate-400 flex-1 truncate">{formUrl}</span>
+              <button onClick={copyLink} className="flex items-center gap-1 text-xs text-blue-600 font-medium shrink-0">
+                {copied ? <><CheckCircle2 className="w-3.5 h-3.5" /> Copiado!</> : <><Copy className="w-3.5 h-3.5" /> Copiar</>}
+              </button>
+              <a href={formUrl} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-blue-600">
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          )}
+        </div>
+
+        {/* Título e subtítulo */}
+        <div className="grid grid-cols-1 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Título do formulário</label>
+            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Ex: Cadastre seu interesse" className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Subtítulo</label>
+            <input value={subtitle} onChange={e => setSubtitle(e.target.value)} placeholder="Ex: Preencha seus dados e entraremos em contato." className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Mensagem de agradecimento</label>
+            <input value={thankYou} onChange={e => setThankYou(e.target.value)} placeholder="Ex: Obrigado! Entraremos em contato em breve." className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+        </div>
+
+        {/* Cor e corretor */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Cor principal</label>
+            <div className="flex items-center gap-2">
+              <input type="color" value={color} onChange={e => setColor(e.target.value)} className="w-10 h-10 rounded-lg border border-slate-300 cursor-pointer" />
+              <span className="text-sm text-slate-500">{color}</span>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Atribuir leads para</label>
+            <select value={assignedUserId} onChange={e => setAssignedUserId(e.target.value)} className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">Sem atribuição</option>
+              {users.filter((u: any) => u.isActive).map((u: any) => (
+                <option key={u.id} value={u.id}>{u.name} ({u.role === 'BROKER' ? 'Corretor' : u.role === 'MANAGER' ? 'Gerente' : 'Admin'})</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Campos */}
+        <div>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Campos do formulário</label>
+          <div className="space-y-2">
+            {FORM_FIELD_OPTIONS.map(f => (
+              <label key={f.value} className={`flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors ${fields.includes(f.value) ? 'border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
+                <input
+                  type="checkbox"
+                  checked={fields.includes(f.value)}
+                  onChange={() => toggleField(f.value)}
+                  disabled={f.required}
+                  className="accent-blue-600"
+                />
+                <span className="text-sm text-slate-700 dark:text-slate-300 flex-1">{f.label}</span>
+                {f.required && <span className="text-xs text-slate-400">Obrigatório</span>}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <button onClick={save} disabled={saving} className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2">
+          {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+          {saving ? 'Salvando...' : 'Salvar configurações'}
+        </button>
+      </div>
+
+      {formUrl && (
+        <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 text-sm text-amber-800 dark:text-amber-400">
+          <p className="font-medium mb-1">💡 Como usar</p>
+          <ul className="space-y-1 text-xs text-amber-700 dark:text-amber-500 list-disc list-inside">
+            <li>Compartilhe o link no Instagram, WhatsApp ou Facebook</li>
+            <li>Gere um QR Code com qualquer ferramenta online e coloque em banners</li>
+            <li>Incorpore no seu site copiando o link para um botão</li>
+            <li>Os leads chegam automaticamente na coluna "Contato Inicial" do funil</li>
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

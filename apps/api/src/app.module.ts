@@ -24,6 +24,7 @@ import { ExportModule } from './modules/export/export.module';
 import { BackupModule } from './modules/backup/backup.module';
 import { PushModule } from './modules/push/push.module';
 import { FinancialModule } from './modules/financial/financial.module';
+import { PublicModule } from './modules/public/public.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { FinancialModule } from './modules/financial/financial.module';
     BackupModule,
     PushModule,
     FinancialModule,
+    PublicModule,
   ],
 })
 export class AppModule {}
