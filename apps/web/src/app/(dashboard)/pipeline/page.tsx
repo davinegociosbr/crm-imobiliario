@@ -261,10 +261,11 @@ function LeadDetailModal({ lead, onClose }: { lead: any; onClose: () => void }) 
       });
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['lead-detail', lead.id] });
-      qc.invalidateQueries({ queryKey: ['pipeline-kanban'] });
       toast.success('Nota adicionada!');
       resetNote();
+      // invalidate em background — não bloqueia a UI
+      qc.invalidateQueries({ queryKey: ['lead-detail', lead.id] });
+      qc.invalidateQueries({ queryKey: ['pipeline-kanban'] });
     },
     onError: () => toast.error('Erro ao adicionar nota'),
   });
@@ -600,7 +601,8 @@ function LeadCard({ lead, index, onOpen }: { lead: any; index: number; onOpen: (
 
   const updatePriority = useMutation({
     mutationFn: (p: string) => api.put(`/leads/${lead.id}`, { priority: p }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['pipeline-kanban'] }),
+    onMutate: (p: string) => setPriority(p), // atualiza local imediatamente
+    onSettled: () => qc.invalidateQueries({ queryKey: ['pipeline-kanban'] }),
   });
 
   const removeFromPipeline = useMutation({
@@ -881,11 +883,27 @@ export default function PipelinePage() {
   const moveMutation = useMutation({
     mutationFn: ({ leadId, stage }: { leadId: string; stage: string }) =>
       api.put(`/pipeline/${leadId}/move`, { stage }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['pipeline-kanban'] });
-      toast.success('Lead movido com sucesso');
+    onMutate: async ({ leadId, stage }) => {
+      await qc.cancelQueries({ queryKey: ['pipeline-kanban'] });
+      const prev = qc.getQueryData(['pipeline-kanban']);
+      qc.setQueryData(['pipeline-kanban'], (old: any) => {
+        if (!old) return old;
+        return Object.fromEntries(
+          Object.entries(old).map(([s, leads]: [string, any]) => [
+            s,
+            s === stage
+              ? [...leads.filter((l: any) => l.id !== leadId), ...(Object.values(old).flat() as any[]).filter((l: any) => l.id === leadId).map((l: any) => ({ ...l, pipelineStage: stage }))]
+              : (leads as any[]).filter((l: any) => l.id !== leadId),
+          ])
+        );
+      });
+      return { prev };
     },
-    onError: () => toast.error('Erro ao mover lead'),
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['pipeline-kanban'], ctx.prev);
+      toast.error('Erro ao mover lead');
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['pipeline-kanban'] }),
   });
 
   const onDragEnd = (result: any) => {
