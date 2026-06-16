@@ -23,6 +23,19 @@ function maskPhone(v: string) {
   return d.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3').replace(/-$/, '');
 }
 
+function isValidPhone(v: string) {
+  const d = v.replace(/\D/g, '');
+  if (d.length < 10 || d.length > 11) return false;
+  const ddd = Number(d.slice(0, 2));
+  if (ddd < 11 || ddd > 99) return false;
+  // celular: 9 dígitos começando com 9; fixo: 8 dígitos começando com 2-5
+  if (d.length === 11 && d[2] !== '9') return false;
+  if (d.length === 10 && !['2','3','4','5'].includes(d[2])) return false;
+  // sequências inválidas
+  if (/^(\d)\1+$/.test(d)) return false;
+  return true;
+}
+
 export default function PublicFormPage() {
   const { slug } = useParams<{ slug: string }>();
   const [config, setConfig] = useState<any>(null);
@@ -51,6 +64,10 @@ export default function PublicFormPage() {
     setError('');
     if (!form.name.trim() || !form.phone.trim()) {
       setError('Nome e telefone são obrigatórios.');
+      return;
+    }
+    if (!isValidPhone(form.phone)) {
+      setError('Telefone inválido. Informe um número com DDD válido (ex: (11) 98765-4321).');
       return;
     }
     setSubmitting(true);
@@ -132,8 +149,11 @@ export default function PublicFormPage() {
                   onChange={e => set('phone', maskPhone(e.target.value))}
                   placeholder="(00) 00000-0000"
                   inputMode="numeric"
-                  className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
+                  className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:border-transparent ${form.phone && !isValidPhone(form.phone) ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
                 />
+                {form.phone && !isValidPhone(form.phone) && (
+                  <p className="text-xs text-red-500 mt-1">Número inválido. Informe DDD + número (ex: 11 98765-4321)</p>
+                )}
               </div>
             )}
 
