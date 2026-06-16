@@ -6,7 +6,8 @@ import { useForm } from 'react-hook-form';
 import {
   ArrowLeft, Phone, MessageCircle, Mail, Edit2, Loader2,
   CheckCircle2, Circle, Trash2, Plus, Flag, Calendar, Home,
-  FileText, DollarSign, StickyNote, GitBranch,
+  FileText, DollarSign, StickyNote, GitBranch, Trophy, ClipboardList,
+  PhoneCall, Users, Send, Star,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
@@ -38,35 +39,66 @@ export default function LeadDetailPage() {
     enabled: activeTab === 'Notas' || activeTab === 'Timeline',
   });
 
-  // Timeline: junta notas, visitas e propostas ordenadas por data
+  const PIPELINE_PT: Record<string, string> = {
+    INITIAL_CONTACT: 'Contato Inicial', QUALIFICATION: 'Qualificação', VISIT_SCHEDULED: 'Visita Agendada',
+    PROPOSAL_SENT: 'Proposta Enviada', NEGOTIATION: 'Negociação', CLOSED_WON: 'Fechado Ganho', CLOSED_LOST: 'Fechado Perdido',
+  };
+
   const timelineEvents = (() => {
     if (!lead) return [];
     const events: any[] = [];
 
-    // Criação do lead
-    events.push({ type: 'created', date: lead.createdAt, label: 'Lead cadastrado', icon: 'created', color: 'blue' });
+    events.push({ date: lead.createdAt, label: 'Lead cadastrado no CRM', icon: 'created', tag: 'Cadastro', tagColor: 'blue', by: lead.assignedUser?.name });
 
-    // Atividades/notas
     activities.forEach((a: any) => {
-      const label = a.type === 'NOTE' ? 'Nota registrada'
-        : a.type === 'CALL' ? 'Ligação realizada'
-        : a.type === 'EMAIL' ? 'E-mail enviado'
-        : a.type === 'VISIT' ? 'Visita realizada'
-        : a.type === 'MEETING' ? 'Reunião realizada'
-        : a.description?.startsWith('Movido') ? a.description
-        : a.type;
-      const isFunnelMove = a.description?.startsWith('Movido');
-      events.push({ type: 'activity', date: a.createdAt, label, description: isFunnelMove ? '' : a.description, icon: isFunnelMove ? 'funnel' : 'note', color: isFunnelMove ? 'purple' : 'slate', completed: a.isCompleted });
+      const isFunnel = a.description?.startsWith('Movido para etapa:');
+      if (isFunnel) {
+        const stage = a.description.replace('Movido para etapa: ', '');
+        events.push({ date: a.createdAt, label: `Avançou para "${PIPELINE_PT[stage] || stage}"`, icon: 'funnel', tag: 'Funil', tagColor: 'purple', by: a.user?.name });
+      } else {
+        const iconMap: Record<string, string> = { CALL: 'call', EMAIL: 'email', MEETING: 'meeting', VISIT: 'visitact', NOTE: 'note', WHATSAPP: 'whatsapp' };
+        const tagMap: Record<string, string> = { CALL: 'Ligação', EMAIL: 'E-mail', MEETING: 'Reunião', VISIT: 'Visita', NOTE: 'Nota', WHATSAPP: 'WhatsApp' };
+        events.push({
+          date: a.createdAt, label: a.description, icon: iconMap[a.type] || 'note',
+          tag: tagMap[a.type] || a.type, tagColor: 'slate', by: a.user?.name,
+          extra: a.nextAction ? `Próxima ação: ${a.nextAction}` : undefined,
+          completed: a.isCompleted,
+        });
+      }
     });
 
-    // Visitas
     (lead.visits || []).forEach((v: any) => {
-      events.push({ type: 'visit', date: v.scheduledAt, label: `Visita agendada — ${v.property?.name || 'imóvel'}`, description: `Status: ${v.status}`, icon: 'visit', color: 'green' });
+      events.push({
+        date: v.scheduledAt, label: `Visita ao imóvel ${v.property?.name || ''}`,
+        icon: 'visit', tag: 'Visita', tagColor: 'green', by: v.user?.name,
+        extra: `Status: ${v.status === 'SCHEDULED' ? 'Agendada' : v.status === 'COMPLETED' ? 'Realizada' : v.status === 'CANCELLED' ? 'Cancelada' : v.status}`,
+      });
     });
 
-    // Propostas
     (lead.proposals || []).forEach((p: any) => {
-      events.push({ type: 'proposal', date: p.createdAt, label: `Proposta enviada — ${p.property?.name || 'imóvel'}`, description: `Valor: ${p.propertyValue ? `R$ ${Number(p.propertyValue).toLocaleString('pt-BR')}` : '-'} · Status: ${p.status}`, icon: 'proposal', color: 'amber' });
+      const statusLabel: Record<string, string> = { PENDING: 'Aguardando', ACCEPTED: 'Aceita', REJECTED: 'Recusada', EXPIRED: 'Expirada' };
+      events.push({
+        date: p.createdAt, label: `Proposta para ${p.property?.name || 'imóvel'}`,
+        icon: 'proposal', tag: 'Proposta', tagColor: 'amber', by: p.user?.name,
+        extra: `${p.propertyValue ? `R$ ${Number(p.propertyValue).toLocaleString('pt-BR')} · ` : ''}${statusLabel[p.status] || p.status}`,
+        highlight: p.status === 'ACCEPTED',
+      });
+    });
+
+    (lead.sales || []).forEach((s: any) => {
+      events.push({
+        date: s.createdAt, label: `Venda concluída${s.property?.name ? ` — ${s.property.name}` : ''}`,
+        icon: 'sale', tag: 'Venda', tagColor: 'emerald',
+        extra: s.saleValue ? `Valor: R$ ${Number(s.saleValue).toLocaleString('pt-BR')}` : undefined,
+        highlight: true,
+      });
+    });
+
+    (lead.tasks || []).filter((t: any) => t.status === 'DONE').forEach((t: any) => {
+      events.push({
+        date: t.completedAt || t.updatedAt, label: `Tarefa concluída: ${t.title}`,
+        icon: 'task', tag: 'Tarefa', tagColor: 'teal', by: t.assignedUser?.name,
+      });
     });
 
     return events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -200,48 +232,82 @@ export default function LeadDetailPage() {
 
       {/* Aba: Timeline */}
       {activeTab === 'Timeline' && (
-        <div className="relative">
-          {timelineEvents.length === 0 && (
+        <div className="space-y-4">
+          {/* Resumo rápido */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: 'Interações', value: activities.filter((a: any) => !a.description?.startsWith('Movido')).length, icon: MessageCircle, color: 'text-blue-600 bg-blue-50 dark:bg-blue-950/30' },
+              { label: 'Visitas', value: (lead.visits || []).length, icon: Home, color: 'text-green-600 bg-green-50 dark:bg-green-950/30' },
+              { label: 'Propostas', value: (lead.proposals || []).length, icon: FileText, color: 'text-amber-600 bg-amber-50 dark:bg-amber-950/30' },
+              { label: 'Vendas', value: (lead.sales || []).length, icon: Trophy, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30' },
+            ].map((s) => (
+              <div key={s.label} className={`flex items-center gap-3 rounded-xl border p-3 ${s.color.split(' ')[1]} dark:border-slate-800`}>
+                <s.icon className={`w-5 h-5 shrink-0 ${s.color.split(' ')[0]}`} />
+                <div>
+                  <p className="text-lg font-bold text-slate-800 dark:text-white leading-none">{s.value}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{s.label}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {loadingActivities && <div className="text-center py-10"><Loader2 className="w-5 h-5 animate-spin mx-auto text-slate-400" /></div>}
+
+          {!loadingActivities && timelineEvents.length === 0 && (
             <p className="text-center py-12 text-slate-400 text-sm">Nenhum evento registrado ainda.</p>
           )}
+
           <div className="space-y-0">
             {timelineEvents.map((event, index) => {
-              const iconMap: Record<string, any> = {
-                created: { icon: Plus, bg: 'bg-blue-100 dark:bg-blue-950/40', text: 'text-blue-600' },
-                note: { icon: StickyNote, bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-500' },
-                funnel: { icon: GitBranch, bg: 'bg-purple-100 dark:bg-purple-950/40', text: 'text-purple-600' },
-                visit: { icon: Home, bg: 'bg-green-100 dark:bg-green-950/40', text: 'text-green-600' },
-                proposal: { icon: FileText, bg: 'bg-amber-100 dark:bg-amber-950/40', text: 'text-amber-600' },
+              const iconDef: Record<string, { Icon: any; bg: string; text: string }> = {
+                created:  { Icon: Star,          bg: 'bg-blue-100 dark:bg-blue-900/50',    text: 'text-blue-600' },
+                funnel:   { Icon: GitBranch,     bg: 'bg-purple-100 dark:bg-purple-900/50', text: 'text-purple-600' },
+                note:     { Icon: StickyNote,    bg: 'bg-slate-100 dark:bg-slate-800',      text: 'text-slate-500' },
+                call:     { Icon: PhoneCall,     bg: 'bg-blue-100 dark:bg-blue-900/50',    text: 'text-blue-600' },
+                email:    { Icon: Mail,          bg: 'bg-indigo-100 dark:bg-indigo-900/50', text: 'text-indigo-600' },
+                meeting:  { Icon: Users,         bg: 'bg-violet-100 dark:bg-violet-900/50', text: 'text-violet-600' },
+                whatsapp: { Icon: MessageCircle, bg: 'bg-green-100 dark:bg-green-900/50',  text: 'text-green-600' },
+                visitact: { Icon: Home,          bg: 'bg-teal-100 dark:bg-teal-900/50',    text: 'text-teal-600' },
+                visit:    { Icon: Home,          bg: 'bg-green-100 dark:bg-green-900/50',  text: 'text-green-600' },
+                proposal: { Icon: Send,          bg: 'bg-amber-100 dark:bg-amber-900/50',  text: 'text-amber-600' },
+                sale:     { Icon: Trophy,        bg: 'bg-emerald-100 dark:bg-emerald-900/50', text: 'text-emerald-600' },
+                task:     { Icon: ClipboardList, bg: 'bg-teal-100 dark:bg-teal-900/50',    text: 'text-teal-600' },
               };
-              const iconInfo = iconMap[event.icon] || iconMap.note;
-              const IconComp = iconInfo.icon;
+              const tagColors: Record<string, string> = {
+                blue: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+                purple: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
+                slate: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+                green: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
+                amber: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+                emerald: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+                teal: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300',
+              };
+              const { Icon, bg, text } = iconDef[event.icon] || iconDef.note;
               const isLast = index === timelineEvents.length - 1;
 
               return (
-                <div key={index} className="flex gap-4">
-                  {/* Linha vertical + ícone */}
+                <div key={index} className="flex gap-3">
                   <div className="flex flex-col items-center">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 ${iconInfo.bg}`}>
-                      <IconComp className={`w-3.5 h-3.5 ${iconInfo.text}`} />
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 ${bg} ${event.highlight ? 'ring-2 ring-offset-1 ring-emerald-400' : ''}`}>
+                      <Icon className={`w-3.5 h-3.5 ${text}`} />
                     </div>
-                    {!isLast && <div className="w-0.5 flex-1 bg-slate-200 dark:bg-slate-700 my-1" />}
+                    {!isLast && <div className="w-px flex-1 bg-slate-200 dark:bg-slate-700 my-1" />}
                   </div>
 
-                  {/* Conteúdo */}
-                  <div className={`flex-1 pb-5 ${isLast ? '' : ''}`}>
-                    <div className="bg-white dark:bg-slate-900 rounded-xl border p-3.5">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm font-medium text-slate-800 dark:text-white">{event.label}</p>
-                        {event.completed && (
-                          <span className="text-xs px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 shrink-0">✓ Concluído</span>
-                        )}
+                  <div className="flex-1 pb-4">
+                    <div className={`rounded-xl border p-3.5 transition-colors ${event.highlight ? 'border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800' : 'bg-white dark:bg-slate-900'}`}>
+                      <div className="flex items-start justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${tagColors[event.tagColor] || tagColors.slate}`}>{event.tag}</span>
+                          {event.completed && <span className="text-[11px] px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">✓ Concluído</span>}
+                        </div>
+                        <time className="text-[11px] text-slate-400 shrink-0">
+                          {new Date(event.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })} {new Date(event.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        </time>
                       </div>
-                      {event.description && (
-                        <p className="text-xs text-slate-500 mt-1 leading-relaxed">{event.description}</p>
-                      )}
-                      <p className="text-xs text-slate-400 mt-2">
-                        {new Date(event.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                      </p>
+                      <p className="text-sm font-medium text-slate-800 dark:text-white mt-1.5 leading-snug">{event.label}</p>
+                      {event.extra && <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{event.extra}</p>}
+                      {event.by && <p className="text-[11px] text-slate-400 mt-1.5">por {event.by}</p>}
                     </div>
                   </div>
                 </div>
