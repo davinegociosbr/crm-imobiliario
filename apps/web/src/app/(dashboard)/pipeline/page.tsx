@@ -2,7 +2,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { Phone, MessageCircle, Calendar, Briefcase, X, Loader2, Plus, StickyNote, Clock, Palette, Trash2, Pencil, Check, CheckCircle2, Circle, Search, Filter, History, ArrowUpDown, ArrowUp, ArrowDown, ArrowDownAZ } from 'lucide-react';
+import { Phone, MessageCircle, Calendar, Briefcase, X, Loader2, Plus, StickyNote, Clock, Palette, Trash2, Pencil, Check, CheckCircle2, Circle, Search, Filter, History, ArrowUpDown, ArrowUp, ArrowDown, ArrowDownAZ, ExternalLink } from 'lucide-react';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { api } from '@/lib/api';
@@ -691,6 +692,13 @@ function LeadCard({ lead, index, onOpen }: { lead: any; index: number; onOpen: (
               </a>
             )}
             <div className="flex gap-0.5 ml-auto items-center" onClick={e => e.stopPropagation()}>
+              <Link
+                href={`/leads/${lead.id}?tab=timeline`}
+                title="Ver timeline"
+                className="w-5 h-5 rounded bg-slate-50 dark:bg-slate-700 text-slate-400 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/40 hover:text-blue-600 flex items-center justify-center transition-colors"
+              >
+                <ExternalLink className="w-3 h-3" />
+              </Link>
               <button
                 onClick={handleDelete}
                 title="Excluir lead"

@@ -1,6 +1,6 @@
 'use client';
-import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import {
@@ -23,8 +23,13 @@ type Tab = typeof TABS[number];
 export default function LeadDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const qc = useQueryClient();
-  const [activeTab, setActiveTab] = useState<Tab>('Dados');
+  const [activeTab, setActiveTab] = useState<Tab>(() => {
+    const t = searchParams.get('tab');
+    if (t === 'timeline') return 'Timeline';
+    return 'Dados';
+  });
   const [showEdit, setShowEdit] = useState(false);
   const [showNoteForm, setShowNoteForm] = useState(false);
 

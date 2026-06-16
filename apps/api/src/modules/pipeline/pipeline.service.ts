@@ -58,13 +58,21 @@ export class PipelineService {
     const lead = await this.prisma.lead.findFirst({ where: { id: leadId, companyId } });
     if (!lead) return null;
 
-    return this.prisma.lead.update({
-      where: { id: leadId },
-      data: {
-        pipelineStage: stage,
-        status: 'IN_PROGRESS',
-        updatedAt: new Date(),
-      },
-    });
+    const [updated] = await this.prisma.$transaction([
+      this.prisma.lead.update({
+        where: { id: leadId },
+        data: { pipelineStage: stage, status: 'IN_PROGRESS', updatedAt: new Date() },
+      }),
+      this.prisma.activity.create({
+        data: {
+          leadId,
+          userId,
+          type: 'NOTE',
+          description: `Movido para etapa: ${stage}`,
+        },
+      }),
+    ]);
+
+    return updated;
   }
 }
