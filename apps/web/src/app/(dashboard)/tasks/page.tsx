@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, CheckCircle, Circle, Clock, AlertCircle, Trash2, Bell, BellOff, X, ChevronDown } from 'lucide-react';
+import { Plus, CheckCircle, Circle, Clock, AlertCircle, Trash2, Bell, BellOff, X, ChevronDown, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { formatDate } from '@/lib/utils';
@@ -145,6 +145,96 @@ function QuickTaskForm({ onClose, onSaved }: { onClose: () => void; onSaved: () 
   );
 }
 
+// ── Modal de edição de tarefa ─────────────────────────────────────────────────
+function EditTaskModal({ task, onClose, onSaved }: { task: any; onClose: () => void; onSaved: () => void }) {
+  const [title, setTitle] = useState(task.title || '');
+  const [description, setDescription] = useState(task.description || '');
+  const [priority, setPriority] = useState(task.priority || 'MEDIUM');
+  const [dueAt, setDueAt] = useState(task.dueAt ? new Date(task.dueAt).toISOString().slice(0, 16) : '');
+  const [saving, setSaving] = useState(false);
+
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 16);
+  const tomorrowStr = new Date(today.getTime() + 86400000).toISOString().slice(0, 16);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!title.trim()) return;
+    setSaving(true);
+    try {
+      await api.put(`/tasks/${task.id}`, { title, description: description || null, priority, dueAt: dueAt || null });
+      toast.success('Tarefa atualizada!');
+      onSaved();
+      onClose();
+    } catch {
+      toast.error('Erro ao salvar tarefa');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+      <div className="w-full sm:max-w-md bg-white dark:bg-slate-900 rounded-t-2xl sm:rounded-2xl shadow-2xl p-5 pb-8 sm:pb-5" onClick={e => e.stopPropagation()}>
+        <div className="w-10 h-1 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-4 sm:hidden" />
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-slate-800 dark:text-white">Editar Tarefa</h2>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
+            <X className="w-5 h-5 text-slate-500" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <textarea
+            autoFocus
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            placeholder="Título da tarefa"
+            rows={2}
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-base resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+
+          <textarea
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            placeholder="Descrição (opcional)"
+            rows={2}
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+
+          <div>
+            <p className="text-xs font-medium text-slate-500 mb-2">Prioridade</p>
+            <div className="grid grid-cols-4 gap-2">
+              {Object.entries(PRIORITY).map(([k, v]) => (
+                <button key={k} type="button" onClick={() => setPriority(k)}
+                  className={`py-2 rounded-xl text-sm font-medium border transition-all ${priority === k ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30 text-blue-600' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'}`}>
+                  {v.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs font-medium text-slate-500 mb-2">Prazo</p>
+            <div className="flex gap-2 mb-2">
+              <button type="button" onClick={() => setDueAt(todayStr)} className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-all ${dueAt === todayStr ? 'border-blue-500 bg-blue-50 text-blue-600' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'}`}>Hoje</button>
+              <button type="button" onClick={() => setDueAt(tomorrowStr)} className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-all ${dueAt === tomorrowStr ? 'border-blue-500 bg-blue-50 text-blue-600' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'}`}>Amanhã</button>
+              <button type="button" onClick={() => setDueAt('')} className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-all ${!dueAt ? 'border-blue-500 bg-blue-50 text-blue-600' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'}`}>Sem data</button>
+            </div>
+            <input type="datetime-local" value={dueAt} onChange={e => setDueAt(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+
+          <button type="submit" disabled={!title.trim() || saving}
+            className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold rounded-xl text-base transition-colors">
+            {saving ? 'Salvando...' : 'Salvar alterações'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ── Botão de notificações push ────────────────────────────────────────────────
 function PushButton() {
   const { permission, isSubscribed, isLoading, supported, subscribe, unsubscribe } = usePushNotifications();
@@ -208,6 +298,7 @@ export default function TasksPage() {
   const qc = useQueryClient();
   const [showModal, setShowModal] = useState(false);
   const [showQuick, setShowQuick] = useState(false);
+  const [editingTask, setEditingTask] = useState<any>(null);
   const [statusFilter, setStatusFilter] = useState('PENDING');
 
   // Abre formulário rápido se vier da URL com ?new=true (PWA shortcut)
@@ -328,13 +419,21 @@ export default function TasksPage() {
                   </div>
                 </div>
 
-                {/* Deletar */}
-                <button
-                  onClick={() => deleteMutation.mutate(task.id)}
-                  className="p-2 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg text-red-400 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {/* Editar + Deletar */}
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setEditingTask(task)}
+                    className="p-2 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg text-slate-400 hover:text-blue-500 transition-colors"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => deleteMutation.mutate(task.id)}
+                    className="p-2 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg text-red-400 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
           );
@@ -365,6 +464,13 @@ export default function TasksPage() {
         />
       )}
       {showModal && <TaskModal onClose={() => setShowModal(false)} />}
+      {editingTask && (
+        <EditTaskModal
+          task={editingTask}
+          onClose={() => setEditingTask(null)}
+          onSaved={() => qc.invalidateQueries({ queryKey: ['tasks'] })}
+        />
+      )}
     </div>
   );
 }
