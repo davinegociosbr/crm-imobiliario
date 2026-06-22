@@ -16,6 +16,7 @@ export function TaskModal({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();
   const [recurrenceType, setRecurrenceType] = useState('');
   const [recurrenceDays, setRecurrenceDays] = useState<number[]>([]);
+  const [recurrenceDay, setRecurrenceDay] = useState<number | ''>(1);
   const [recurrenceEnd, setRecurrenceEnd] = useState('');
 
   const { register, handleSubmit, formState: { isSubmitting } } = useForm<{
@@ -31,6 +32,7 @@ export function TaskModal({ onClose }: { onClose: () => void }) {
       dueAt: data.dueAt ? new Date(data.dueAt).toISOString() : null,
       recurrenceType: recurrenceType || null,
       recurrenceDays: recurrenceType === 'WEEKLY' ? recurrenceDays : [],
+      recurrenceDay: recurrenceType === 'MONTHLY' ? (recurrenceDay || 1) : null,
       recurrenceEnd: recurrenceEnd || null,
     }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['tasks'] }); toast.success('Tarefa criada!'); onClose(); },
@@ -95,6 +97,29 @@ export function TaskModal({ onClose }: { onClose: () => void }) {
                 ))}
               </div>
             </div>
+
+            {recurrenceType === 'MONTHLY' && (
+              <div>
+                <label className="text-sm font-medium mb-2 block">Dia do mês</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number" min={1} max={31}
+                    value={recurrenceDay}
+                    onChange={e => setRecurrenceDay(Number(e.target.value))}
+                    className="w-20 p-2 border rounded-lg text-sm text-center font-semibold"
+                  />
+                  <span className="text-sm text-slate-500">de cada mês</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {[1,5,10,15,20,25,28,30].map(d => (
+                    <button key={d} type="button" onClick={() => setRecurrenceDay(d)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${recurrenceDay === d ? 'border-blue-500 bg-blue-500 text-white' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'}`}>
+                      Dia {d}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {recurrenceType === 'WEEKLY' && (
               <div>

@@ -32,7 +32,7 @@ export class TasksService {
   }
 
   async create(companyId: string, userId: string, dto: any) {
-    const { recurrenceType, recurrenceDays, recurrenceEnd, ...rest } = dto;
+    const { recurrenceType, recurrenceDays, recurrenceDay, recurrenceEnd, ...rest } = dto;
 
     const task = await this.prisma.task.create({
       data: {
@@ -43,6 +43,7 @@ export class TasksService {
         dueAt: dto.dueAt ? new Date(dto.dueAt) : null,
         recurrenceType: recurrenceType || null,
         recurrenceDays: recurrenceDays || [],
+        recurrenceDay: recurrenceDay || null,
         recurrenceEnd: recurrenceEnd ? new Date(recurrenceEnd) : null,
       },
       include: {
@@ -51,8 +52,10 @@ export class TasksService {
       },
     });
 
-    // Para tarefas semanais, gera ocorrências para os próximos 60 dias imediatamente
-    if (recurrenceType === 'WEEKLY' && recurrenceDays?.length && dto.dueAt) {
+    // Gera ocorrências para os próximos 60 dias imediatamente
+    if ((recurrenceType === 'WEEKLY' && recurrenceDays?.length) ||
+        recurrenceType === 'DAILY' ||
+        (recurrenceType === 'MONTHLY' && (recurrenceDay || dto.dueAt))) {
       await this.generateOccurrences(task, 60);
     }
 
@@ -131,10 +134,14 @@ export class TasksService {
         d.setDate(d.getDate() + 1);
       }
     } else if (task.recurrenceType === 'MONTHLY') {
+      const dayOfMonth = task.recurrenceDay || base.getDate();
       const d = new Date(base);
       d.setMonth(d.getMonth() + 1);
       while (d <= until) {
+        const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+        d.setDate(Math.min(dayOfMonth, last));
         occurrences.push(new Date(d));
+        d.setDate(1);
         d.setMonth(d.getMonth() + 1);
       }
     }

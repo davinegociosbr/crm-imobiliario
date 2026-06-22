@@ -28,7 +28,7 @@ const DAYS_OF_WEEK = [
   { value: 6, short: 'Sáb' },
 ];
 
-function RecurrenceFields({ recurrenceType, setRecurrenceType, recurrenceDays, setRecurrenceDays, recurrenceEnd, setRecurrenceEnd }: any) {
+function RecurrenceFields({ recurrenceType, setRecurrenceType, recurrenceDays, setRecurrenceDays, recurrenceDay, setRecurrenceDay, recurrenceEnd, setRecurrenceEnd }: any) {
   function toggleDay(d: number) {
     setRecurrenceDays((prev: number[]) => prev.includes(d) ? prev.filter((x: number) => x !== d) : [...prev, d]);
   }
@@ -45,6 +45,27 @@ function RecurrenceFields({ recurrenceType, setRecurrenceType, recurrenceDays, s
           ))}
         </div>
       </div>
+
+      {recurrenceType === 'MONTHLY' && (
+        <div>
+          <p className="text-xs font-medium text-slate-500 mb-2">Dia do mês</p>
+          <div className="flex items-center gap-3 mb-2">
+            <input type="number" min={1} max={31} value={recurrenceDay || 1}
+              onChange={e => setRecurrenceDay(Number(e.target.value))}
+              className="w-16 px-2 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-center font-semibold bg-white dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <span className="text-sm text-slate-500">de cada mês</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {[1,5,10,15,20,25,28,30].map(d => (
+              <button key={d} type="button" onClick={() => setRecurrenceDay(d)}
+                className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-all ${recurrenceDay === d ? 'border-blue-500 bg-blue-500 text-white' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'}`}>
+                Dia {d}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {recurrenceType === 'WEEKLY' && (
         <div>
@@ -78,6 +99,7 @@ function QuickTaskForm({ onClose, onSaved }: { onClose: () => void; onSaved: () 
   const [dueAt, setDueAt] = useState('');
   const [recurrenceType, setRecurrenceType] = useState('');
   const [recurrenceDays, setRecurrenceDays] = useState<number[]>([]);
+  const [recurrenceDay, setRecurrenceDay] = useState<number>(1);
   const [recurrenceEnd, setRecurrenceEnd] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -90,6 +112,7 @@ function QuickTaskForm({ onClose, onSaved }: { onClose: () => void; onSaved: () 
         title, priority, dueAt: dueAt || null,
         recurrenceType: recurrenceType || null,
         recurrenceDays: recurrenceType === 'WEEKLY' ? recurrenceDays : [],
+        recurrenceDay: recurrenceType === 'MONTHLY' ? recurrenceDay : null,
         recurrenceEnd: recurrenceEnd || null,
       });
       toast.success('✅ Tarefa criada!');
@@ -192,6 +215,7 @@ function QuickTaskForm({ onClose, onSaved }: { onClose: () => void; onSaved: () 
           <RecurrenceFields
             recurrenceType={recurrenceType} setRecurrenceType={setRecurrenceType}
             recurrenceDays={recurrenceDays} setRecurrenceDays={setRecurrenceDays}
+            recurrenceDay={recurrenceDay} setRecurrenceDay={setRecurrenceDay}
             recurrenceEnd={recurrenceEnd} setRecurrenceEnd={setRecurrenceEnd}
           />
 
@@ -216,6 +240,7 @@ function EditTaskModal({ task, onClose, onSaved }: { task: any; onClose: () => v
   const [dueAt, setDueAt] = useState(task.dueAt ? new Date(task.dueAt).toISOString().slice(0, 16) : '');
   const [recurrenceType, setRecurrenceType] = useState(task.recurrenceType || '');
   const [recurrenceDays, setRecurrenceDays] = useState<number[]>(task.recurrenceDays || []);
+  const [recurrenceDay, setRecurrenceDay] = useState<number>(task.recurrenceDay || 1);
   const [recurrenceEnd, setRecurrenceEnd] = useState(task.recurrenceEnd ? new Date(task.recurrenceEnd).toISOString().slice(0, 10) : '');
   const [saving, setSaving] = useState(false);
 
@@ -232,6 +257,7 @@ function EditTaskModal({ task, onClose, onSaved }: { task: any; onClose: () => v
         title, description: description || null, priority, dueAt: dueAt || null,
         recurrenceType: recurrenceType || null,
         recurrenceDays: recurrenceType === 'WEEKLY' ? recurrenceDays : [],
+        recurrenceDay: recurrenceType === 'MONTHLY' ? recurrenceDay : null,
         recurrenceEnd: recurrenceEnd || null,
       });
       toast.success('Tarefa atualizada!');
@@ -299,6 +325,7 @@ function EditTaskModal({ task, onClose, onSaved }: { task: any; onClose: () => v
           <RecurrenceFields
             recurrenceType={recurrenceType} setRecurrenceType={setRecurrenceType}
             recurrenceDays={recurrenceDays} setRecurrenceDays={setRecurrenceDays}
+            recurrenceDay={recurrenceDay} setRecurrenceDay={setRecurrenceDay}
             recurrenceEnd={recurrenceEnd} setRecurrenceEnd={setRecurrenceEnd}
           />
 
