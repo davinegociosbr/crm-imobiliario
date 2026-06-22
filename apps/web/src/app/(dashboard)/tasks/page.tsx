@@ -110,7 +110,7 @@ function QuickTaskForm({ onClose, onSaved }: { onClose: () => void; onSaved: () 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="w-full sm:max-w-md bg-white dark:bg-slate-900 rounded-t-2xl sm:rounded-2xl shadow-2xl p-5 pb-8 sm:pb-5"
+        className="w-full sm:max-w-md bg-white dark:bg-slate-900 rounded-t-2xl sm:rounded-2xl shadow-2xl p-5 pb-8 sm:pb-5 overflow-y-auto max-h-[92vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Handle bar mobile */}
@@ -246,7 +246,7 @@ function EditTaskModal({ task, onClose, onSaved }: { task: any; onClose: () => v
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
-      <div className="w-full sm:max-w-md bg-white dark:bg-slate-900 rounded-t-2xl sm:rounded-2xl shadow-2xl p-5 pb-8 sm:pb-5" onClick={e => e.stopPropagation()}>
+      <div className="w-full sm:max-w-md bg-white dark:bg-slate-900 rounded-t-2xl sm:rounded-2xl shadow-2xl p-5 pb-8 sm:pb-5 overflow-y-auto max-h-[92vh]" onClick={e => e.stopPropagation()}>
         <div className="w-10 h-1 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-4 sm:hidden" />
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-slate-800 dark:text-white">Editar Tarefa</h2>
