@@ -195,7 +195,7 @@ export class TasksService implements OnModuleInit {
     });
   }
 
-  // Roda todo dia às 00:01 — garante ocorrências do dia atual + próximos 14 dias
+  // Roda todo dia às 00:01 — gera apenas as ocorrências do dia seguinte
   @Cron('1 0 * * *')
   async generateRecurringTasks() {
     const templates = await this.prisma.task.findMany({
@@ -207,7 +207,7 @@ export class TasksService implements OnModuleInit {
     });
 
     for (const task of templates) {
-      await this.generateOccurrences(task, 14);
+      await this.generateOccurrences(task, 1);
     }
   }
 
