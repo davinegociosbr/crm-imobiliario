@@ -6,9 +6,9 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class TasksService implements OnModuleInit {
   constructor(private prisma: PrismaService) {}
 
-  // Gera ocorrências ao iniciar o servidor (recupera dias que possam ter sido perdidos)
-  async onModuleInit() {
-    await this.generateRecurringTasks();
+  // Gera ocorrências em background ao iniciar (não bloqueia o startup do servidor)
+  onModuleInit() {
+    this.generateRecurringTasks().catch(() => {});
   }
 
   async findAll(companyId: string, filters: any = {}) {

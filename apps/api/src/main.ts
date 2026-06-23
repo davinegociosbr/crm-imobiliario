@@ -36,6 +36,10 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
+  // Health check — Railway usa isso para saber se o servidor está vivo
+  const httpAdapter = app.getHttpAdapter();
+  httpAdapter.get('/health', (_req: any, res: any) => res.json({ status: 'ok' }));
+
   const port = process.env.PORT || 3001;
   await app.listen(port);
   console.log(`🚀 API rodando em http://localhost:${port}`);
