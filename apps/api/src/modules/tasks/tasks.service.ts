@@ -1,10 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
-export class TasksService {
+export class TasksService implements OnModuleInit {
   constructor(private prisma: PrismaService) {}
+
+  // Gera ocorrências ao iniciar o servidor (recupera dias que possam ter sido perdidos)
+  async onModuleInit() {
+    await this.generateRecurringTasks();
+  }
 
   async findAll(companyId: string, filters: any = {}) {
     const where: any = { companyId };
@@ -106,11 +111,19 @@ export class TasksService {
     });
   }
 
-  // Gera ocorrências futuras para uma tarefa recorrente
+  // Gera ocorrências para uma tarefa recorrente a partir de HOJE
   private async generateOccurrences(task: any, daysAhead: number) {
-    if (!task.recurrenceType || !task.dueAt) return;
+    if (!task.recurrenceType) return;
 
-    const base = new Date(task.dueAt);
+    // Usa dueAt do pai como referência de horário; se não tiver, usa meio-dia
+    const base = task.dueAt ? new Date(task.dueAt) : new Date();
+    const baseHour = base.getHours();
+    const baseMin  = base.getMinutes();
+
+    // Gera a partir de HOJE (não de base+1), para nunca perder o dia atual
+    const startDate = new Date();
+    startDate.setHours(baseHour, baseMin, 0, 0);
+
     const until = task.recurrenceEnd
       ? new Date(task.recurrenceEnd)
       : new Date(Date.now() + daysAhead * 86400000);
@@ -118,42 +131,53 @@ export class TasksService {
     const occurrences: Date[] = [];
 
     if (task.recurrenceType === 'DAILY') {
-      const d = new Date(base);
-      d.setDate(d.getDate() + 1);
+      const d = new Date(startDate);
       while (d <= until) {
-        occurrences.push(new Date(d));
+        // Pula a data original do pai (ele próprio já é a primeira ocorrência)
+        if (!task.dueAt || d.toDateString() !== base.toDateString()) {
+          occurrences.push(new Date(d));
+        }
         d.setDate(d.getDate() + 1);
       }
     } else if (task.recurrenceType === 'WEEKLY') {
       const days: number[] = task.recurrenceDays || [];
       if (!days.length) return;
-      const d = new Date(base);
-      d.setDate(d.getDate() + 1);
+      const d = new Date(startDate);
       while (d <= until) {
-        if (days.includes(d.getDay())) occurrences.push(new Date(d));
+        if (days.includes(d.getDay()) &&
+            (!task.dueAt || d.toDateString() !== base.toDateString())) {
+          occurrences.push(new Date(d));
+        }
         d.setDate(d.getDate() + 1);
       }
     } else if (task.recurrenceType === 'MONTHLY') {
       const dayOfMonth = task.recurrenceDay || base.getDate();
-      const d = new Date(base);
-      d.setMonth(d.getMonth() + 1);
+      const d = new Date(startDate);
+      d.setDate(1); // começa do início do mês atual
       while (d <= until) {
         const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-        d.setDate(Math.min(dayOfMonth, last));
-        occurrences.push(new Date(d));
-        d.setDate(1);
+        const target = new Date(d.getFullYear(), d.getMonth(),
+          Math.min(dayOfMonth, last), baseHour, baseMin, 0, 0);
+        if (target >= startDate && target <= until &&
+            (!task.dueAt || target.toDateString() !== base.toDateString())) {
+          occurrences.push(new Date(target));
+        }
         d.setMonth(d.getMonth() + 1);
       }
     }
 
-    // Verifica quais datas já têm ocorrência para não duplicar
+    if (!occurrences.length) return;
+
+    // Deduplicação por data (ignora horário para evitar duplicatas por fuso)
     const existing = await this.prisma.task.findMany({
-      where: { parentTaskId: task.id, dueAt: { in: occurrences } },
+      where: { parentTaskId: task.id },
       select: { dueAt: true },
     });
-    const existingTimes = new Set(existing.map((t: any) => t.dueAt?.getTime()));
+    const existingDates = new Set(
+      existing.map((t: any) => t.dueAt ? new Date(t.dueAt).toDateString() : null)
+    );
 
-    const toCreate = occurrences.filter(d => !existingTimes.has(d.getTime()));
+    const toCreate = occurrences.filter(d => !existingDates.has(d.toDateString()));
     if (!toCreate.length) return;
 
     await this.prisma.task.createMany({
@@ -171,8 +195,8 @@ export class TasksService {
     });
   }
 
-  // Roda todo dia às 06:00 — gera ocorrências para os próximos 7 dias
-  @Cron('0 6 * * *')
+  // Roda todo dia às 00:01 — garante ocorrências do dia atual + próximos 14 dias
+  @Cron('1 0 * * *')
   async generateRecurringTasks() {
     const templates = await this.prisma.task.findMany({
       where: {
@@ -183,7 +207,23 @@ export class TasksService {
     });
 
     for (const task of templates) {
-      await this.generateOccurrences(task, 7);
+      await this.generateOccurrences(task, 14);
     }
+  }
+
+  // Endpoint para forçar geração manual (útil para recuperar dias perdidos)
+  async forceGenerate(companyId: string) {
+    const templates = await this.prisma.task.findMany({
+      where: {
+        companyId,
+        recurrenceType: { not: null },
+        OR: [{ recurrenceEnd: null }, { recurrenceEnd: { gt: new Date() } }],
+        parentTaskId: null,
+      },
+    });
+    for (const task of templates) {
+      await this.generateOccurrences(task, 60);
+    }
+    return { generated: templates.length };
   }
 }

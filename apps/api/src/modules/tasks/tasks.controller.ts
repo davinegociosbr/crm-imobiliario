@@ -44,4 +44,9 @@ export class TasksController {
   remove(@Param('id') id: string, @CurrentUser() user: any) {
     return this.service.remove(id, user.companyId);
   }
+
+  @Post('generate-recurring')
+  forceGenerate(@CurrentUser() user: any) {
+    return this.service.forceGenerate(user.companyId);
+  }
 }
