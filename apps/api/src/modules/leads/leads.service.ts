@@ -150,7 +150,8 @@ export class LeadsService {
   }
 
   async update(id: string, companyId: string, dto: UpdateLeadDto) {
-    await this.findOne(id, companyId);
+    const exists = await this.prisma.lead.findFirst({ where: { id, companyId }, select: { id: true } });
+    if (!exists) throw new NotFoundException('Lead não encontrado');
     const data = this.sanitize(dto);
     return this.prisma.lead.update({
       where: { id },
@@ -162,7 +163,8 @@ export class LeadsService {
   }
 
   async updatePipelineStage(id: string, companyId: string, stage: string, userId: string) {
-    const lead = await this.findOne(id, companyId);
+    const lead = await this.prisma.lead.findFirst({ where: { id, companyId }, select: { id: true } });
+    if (!lead) throw new NotFoundException('Lead não encontrado');
 
     await this.prisma.activity.create({
       data: {
@@ -180,7 +182,8 @@ export class LeadsService {
   }
 
   async remove(id: string, companyId: string) {
-    await this.findOne(id, companyId);
+    const exists = await this.prisma.lead.findFirst({ where: { id, companyId }, select: { id: true } });
+    if (!exists) throw new NotFoundException('Lead não encontrado');
     await this.prisma.lead.delete({ where: { id } });
     return { message: 'Lead removido com sucesso' };
   }

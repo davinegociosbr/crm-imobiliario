@@ -89,24 +89,27 @@ export class DashboardService {
   }
 
   async getSalesByMonth(companyId: string) {
-    const months = [];
+    const start = startOfMonth(subMonths(new Date(), 5));
+    const end = endOfMonth(new Date());
+
+    const sales = await this.prisma.sale.findMany({
+      where: { lead: { companyId }, soldAt: { gte: start, lte: end }, status: 'ACTIVE' },
+      select: { saleValue: true, soldAt: true },
+    });
+
+    // Agrupa em memória (poucos registros por mês)
+    const map = new Map<string, { count: number; value: number }>();
     for (let i = 5; i >= 0; i--) {
-      const date = subMonths(new Date(), i);
-      const start = startOfMonth(date);
-      const end = endOfMonth(date);
-
-      const sales = await this.prisma.sale.findMany({
-        where: { lead: { companyId }, soldAt: { gte: start, lte: end }, status: 'ACTIVE' },
-        select: { saleValue: true },
-      });
-
-      months.push({
-        month: date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
-        count: sales.length,
-        value: sales.reduce((acc, s) => acc + Number(s.saleValue), 0),
-      });
+      const d = subMonths(new Date(), i);
+      const key = d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+      map.set(key, { count: 0, value: 0 });
     }
-    return months;
+    for (const s of sales) {
+      const key = new Date(s.soldAt).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+      const entry = map.get(key);
+      if (entry) { entry.count++; entry.value += Number(s.saleValue); }
+    }
+    return Array.from(map.entries()).map(([month, v]) => ({ month, ...v }));
   }
 
   async getLeadsByOrigin(companyId: string) {
@@ -134,13 +137,13 @@ export class DashboardService {
       INITIAL_CONTACT: 'Contato Inicial', REDIRECT: 'Redirecionar', ATTENDANCE: 'Atendimento',
       TODAY: 'Hoje', FOLLOW_UP: 'Follow-up', CLIENTS: 'Clientes', INACTIVE: 'Inativos',
     };
-    return Promise.all(
-      stages.map(async (stage) => ({
-        stage,
-        label: labels[stage],
-        count: await this.prisma.lead.count({ where: { companyId, pipelineStage: stage, status: { notIn: ['WON', 'LOST'] } } }),
-      })),
-    );
+    const rows = await this.prisma.lead.groupBy({
+      by: ['pipelineStage'],
+      where: { companyId, pipelineStage: { in: stages }, status: { notIn: ['WON', 'LOST'] } },
+      _count: { id: true },
+    });
+    const countMap = Object.fromEntries(rows.map(r => [r.pipelineStage, r._count.id]));
+    return stages.map(stage => ({ stage, label: labels[stage], count: countMap[stage] ?? 0 }));
   }
 
   async getReminders(companyId: string) {
@@ -180,38 +183,45 @@ export class DashboardService {
       INITIAL_CONTACT: 'Contato Inicial', REDIRECT: 'Redirecionar', ATTENDANCE: 'Atendimento',
       TODAY: 'Hoje', FOLLOW_UP: 'Follow-up', CLIENTS: 'Clientes', INACTIVE: 'Inativos',
     };
-    return Promise.all(
-      stages.map(async (stage) => ({
-        stage,
-        label: labels[stage],
-        // Exclui leads LOST/WON para mostrar apenas quem está ativo no funil
-        count: await this.prisma.lead.count({ where: { companyId, pipelineStage: stage, status: { notIn: ['WON', 'LOST'] } } }),
-      })),
-    );
+    const rows = await this.prisma.lead.groupBy({
+      by: ['pipelineStage'],
+      where: { companyId, pipelineStage: { in: stages }, status: { notIn: ['WON', 'LOST'] } },
+      _count: { id: true },
+    });
+    const countMap = Object.fromEntries(rows.map(r => [r.pipelineStage, r._count.id]));
+    return stages.map(stage => ({ stage, label: labels[stage], count: countMap[stage] ?? 0 }));
   }
 
   async getBrokerPerformance(companyId: string) {
-    const users = await this.prisma.user.findMany({
-      where: { companyId, role: { in: ['BROKER', 'MANAGER'] } },
-      select: { id: true, name: true },
-    });
-
-    return Promise.all(
-      users.map(async (u) => {
-        const [leads, sales] = await Promise.all([
-          this.prisma.lead.count({ where: { companyId, assignedUserId: u.id } }),
-          this.prisma.sale.findMany({
-            where: { userId: u.id, lead: { companyId }, status: 'ACTIVE' },
-            select: { commissionValue: true },
-          }),
-        ]);
-        return {
-          user: u,
-          leads,
-          sales: sales.length,
-          commission: sales.reduce((acc, s) => acc + Number(s.commissionValue), 0),
-        };
+    const [users, leadCounts, sales] = await Promise.all([
+      this.prisma.user.findMany({
+        where: { companyId, role: { in: ['BROKER', 'MANAGER'] } },
+        select: { id: true, name: true },
       }),
-    );
+      this.prisma.lead.groupBy({
+        by: ['assignedUserId'],
+        where: { companyId, assignedUserId: { not: null } },
+        _count: { id: true },
+      }),
+      this.prisma.sale.findMany({
+        where: { lead: { companyId }, status: 'ACTIVE' },
+        select: { userId: true, commissionValue: true },
+      }),
+    ]);
+
+    const leadMap = Object.fromEntries(leadCounts.map(r => [r.assignedUserId, r._count.id]));
+    const saleMap: Record<string, { count: number; commission: number }> = {};
+    for (const s of sales) {
+      if (!saleMap[s.userId]) saleMap[s.userId] = { count: 0, commission: 0 };
+      saleMap[s.userId].count++;
+      saleMap[s.userId].commission += Number(s.commissionValue);
+    }
+
+    return users.map(u => ({
+      user: u,
+      leads: leadMap[u.id] ?? 0,
+      sales: saleMap[u.id]?.count ?? 0,
+      commission: saleMap[u.id]?.commission ?? 0,
+    }));
   }
 }
