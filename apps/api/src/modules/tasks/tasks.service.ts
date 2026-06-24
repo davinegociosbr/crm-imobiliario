@@ -12,7 +12,22 @@ export class TasksService implements OnModuleInit {
   }
 
   async findAll(companyId: string, filters: any = {}) {
-    const where: any = { companyId };
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+
+    const where: any = {
+      companyId,
+      // Esconde templates pai de tarefas recorrentes — apenas os filhos (ocorrências) aparecem
+      recurrenceType: null,
+      // Esconde ocorrências futuras — cada uma aparece só no seu dia
+      NOT: {
+        AND: [
+          { parentTaskId: { not: null } },
+          { dueAt: { gt: endOfToday } },
+        ],
+      },
+    };
+
     if (filters.status) where.status = filters.status;
     if (filters.priority) where.priority = filters.priority;
     if (filters.assignedUserId) where.assignedUserId = filters.assignedUserId;
@@ -105,6 +120,7 @@ export class TasksService implements OnModuleInit {
         companyId,
         status: { in: ['PENDING', 'IN_PROGRESS'] },
         dueAt: { lt: new Date() },
+        recurrenceType: null,
       },
       include: { assignedUser: { select: { id: true, name: true } } },
       orderBy: { dueAt: 'asc' },
@@ -133,10 +149,7 @@ export class TasksService implements OnModuleInit {
     if (task.recurrenceType === 'DAILY') {
       const d = new Date(startDate);
       while (d <= until) {
-        // Pula a data original do pai (ele próprio já é a primeira ocorrência)
-        if (!task.dueAt || d.toDateString() !== base.toDateString()) {
-          occurrences.push(new Date(d));
-        }
+        occurrences.push(new Date(d));
         d.setDate(d.getDate() + 1);
       }
     } else if (task.recurrenceType === 'WEEKLY') {
@@ -144,8 +157,7 @@ export class TasksService implements OnModuleInit {
       if (!days.length) return;
       const d = new Date(startDate);
       while (d <= until) {
-        if (days.includes(d.getDay()) &&
-            (!task.dueAt || d.toDateString() !== base.toDateString())) {
+        if (days.includes(d.getDay())) {
           occurrences.push(new Date(d));
         }
         d.setDate(d.getDate() + 1);
@@ -153,13 +165,12 @@ export class TasksService implements OnModuleInit {
     } else if (task.recurrenceType === 'MONTHLY') {
       const dayOfMonth = task.recurrenceDay || base.getDate();
       const d = new Date(startDate);
-      d.setDate(1); // começa do início do mês atual
+      d.setDate(1);
       while (d <= until) {
         const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
         const target = new Date(d.getFullYear(), d.getMonth(),
           Math.min(dayOfMonth, last), baseHour, baseMin, 0, 0);
-        if (target >= startDate && target <= until &&
-            (!task.dueAt || target.toDateString() !== base.toDateString())) {
+        if (target >= startDate && target <= until) {
           occurrences.push(new Date(target));
         }
         d.setMonth(d.getMonth() + 1);
