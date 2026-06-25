@@ -83,24 +83,22 @@ export class TasksService implements OnModuleInit {
   }
 
   async update(id: string, companyId: string, dto: any) {
-    const task = await this.prisma.task.findFirst({ where: { id, companyId } });
+    const task = await this.prisma.task.findFirst({ where: { id, companyId }, select: { id: true } });
     if (!task) throw new NotFoundException('Tarefa não encontrada');
 
-    if (dto.status === 'COMPLETED' && !dto.completedAt) {
-      dto.completedAt = new Date();
-    }
+    const { recurrenceType, recurrenceDays, recurrenceEnd, recurrenceDay, dueAt, completedAt, ...rest } = dto;
 
-    const { recurrenceType, recurrenceDays, recurrenceEnd, ...rest } = dto;
+    const data: any = { ...rest };
 
-    return this.prisma.task.update({
-      where: { id },
-      data: {
-        ...rest,
-        ...(recurrenceType !== undefined && { recurrenceType: recurrenceType || null }),
-        ...(recurrenceDays !== undefined && { recurrenceDays }),
-        ...(recurrenceEnd !== undefined && { recurrenceEnd: recurrenceEnd ? new Date(recurrenceEnd) : null }),
-      },
-    });
+    if (dueAt !== undefined) data.dueAt = dueAt ? new Date(dueAt) : null;
+    if (completedAt !== undefined) data.completedAt = completedAt ? new Date(completedAt) : null;
+    if (dto.status === 'COMPLETED' && !data.completedAt) data.completedAt = new Date();
+    if (recurrenceType !== undefined) data.recurrenceType = recurrenceType || null;
+    if (recurrenceDays !== undefined) data.recurrenceDays = recurrenceDays;
+    if (recurrenceDay !== undefined) data.recurrenceDay = recurrenceDay || null;
+    if (recurrenceEnd !== undefined) data.recurrenceEnd = recurrenceEnd ? new Date(recurrenceEnd) : null;
+
+    return this.prisma.task.update({ where: { id }, data });
   }
 
   async remove(id: string, companyId: string) {
