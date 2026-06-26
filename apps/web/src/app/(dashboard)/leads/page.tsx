@@ -1,7 +1,7 @@
 'use client';
 import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Search, Phone, MessageCircle, Mail, Eye, Trash2, Upload, Download, Loader2, Kanban } from 'lucide-react';
+import { Plus, Search, Phone, MessageCircle, Mail, Eye, Trash2, Upload, Download, Loader2, Kanban, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
@@ -99,7 +99,25 @@ export default function LeadsPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [sortField, setSortField] = useState<'name' | 'status' | 'createdAt' | null>(null);
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [showModal, setShowModal] = useState(false);
+
+  function toggleSort(field: 'name' | 'status' | 'createdAt') {
+    if (sortField === field) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDir('asc');
+    }
+  }
+
+  function SortIcon({ field }: { field: 'name' | 'status' | 'createdAt' }) {
+    if (sortField !== field) return <ArrowUpDown className="w-3.5 h-3.5 ml-1 text-slate-400 inline" />;
+    return sortDir === 'asc'
+      ? <ArrowUp className="w-3.5 h-3.5 ml-1 text-blue-500 inline" />
+      : <ArrowDown className="w-3.5 h-3.5 ml-1 text-blue-500 inline" />;
+  }
   const [importing, setImporting] = useState(false);
   const [addToPipelineLead, setAddToPipelineLead] = useState<any>(null);
   const [page, setPage] = useState(0);
@@ -160,7 +178,20 @@ export default function LeadsPage() {
         }
       }
     }
-    return Array.from(seen.values());
+    let result = Array.from(seen.values());
+    if (sortField) {
+      const STATUS_ORDER: Record<string, number> = {
+        NEW: 0, IN_PROGRESS: 1, QUALIFIED: 2, NEGOTIATION: 3, CONTRACT: 4, WON: 5, LOST: 6,
+      };
+      result = result.sort((a, b) => {
+        let cmp = 0;
+        if (sortField === 'status') cmp = (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9);
+        else if (sortField === 'name') cmp = a.name.localeCompare(b.name, 'pt-BR');
+        else if (sortField === 'createdAt') cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        return sortDir === 'asc' ? cmp : -cmp;
+      });
+    }
+    return result;
   })();
 
   return (
@@ -221,13 +252,19 @@ export default function LeadsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-slate-50 dark:bg-slate-800/50">
-                <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Cliente</th>
+                <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-300 cursor-pointer select-none hover:text-blue-600 transition-colors" onClick={() => toggleSort('name')}>
+                  Cliente<SortIcon field="name" />
+                </th>
                 <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Contato</th>
                 <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Origem</th>
                 <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Potencial</th>
-                <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Status</th>
+                <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-300 cursor-pointer select-none hover:text-blue-600 transition-colors" onClick={() => toggleSort('status')}>
+                  Status<SortIcon field="status" />
+                </th>
                 <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Corretor</th>
-                <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Cadastro</th>
+                <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-300 cursor-pointer select-none hover:text-blue-600 transition-colors" onClick={() => toggleSort('createdAt')}>
+                  Cadastro<SortIcon field="createdAt" />
+                </th>
                 <th className="text-right px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Ações</th>
               </tr>
             </thead>
