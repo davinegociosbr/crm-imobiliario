@@ -147,9 +147,9 @@ export default function LeadsPage() {
   };
 
   const { data, isLoading } = useQuery({
-    queryKey: ['leads', search, statusFilter, page],
+    queryKey: ['leads', search, statusFilter, page, sortField, sortDir],
     queryFn: () =>
-      api.get('/leads', { params: { search, status: statusFilter || undefined, skip: page * PAGE_SIZE, take: PAGE_SIZE } }).then((r) => r.data),
+      api.get('/leads', { params: { search, status: statusFilter || undefined, skip: page * PAGE_SIZE, take: PAGE_SIZE, sortBy: sortField || undefined, sortDir: sortField ? sortDir : undefined } }).then((r) => r.data),
   });
 
   const deleteMutation = useMutation({
@@ -178,20 +178,7 @@ export default function LeadsPage() {
         }
       }
     }
-    let result = Array.from(seen.values());
-    if (sortField) {
-      const STATUS_ORDER: Record<string, number> = {
-        NEW: 0, IN_PROGRESS: 1, QUALIFIED: 2, NEGOTIATION: 3, CONTRACT: 4, WON: 5, LOST: 6,
-      };
-      result = result.sort((a, b) => {
-        let cmp = 0;
-        if (sortField === 'status') cmp = (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9);
-        else if (sortField === 'name') cmp = a.name.localeCompare(b.name, 'pt-BR');
-        else if (sortField === 'createdAt') cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        return sortDir === 'asc' ? cmp : -cmp;
-      });
-    }
-    return result;
+    return Array.from(seen.values());
   })();
 
   return (

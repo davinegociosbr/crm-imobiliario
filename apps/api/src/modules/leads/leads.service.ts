@@ -49,6 +49,15 @@ export class LeadsService {
       ];
     }
 
+    const allowedSort: Record<string, any> = {
+      name:      { name: filters.sortDir === 'asc' ? 'asc' : 'desc' },
+      createdAt: { createdAt: filters.sortDir === 'asc' ? 'asc' : 'desc' },
+      status:    { status: filters.sortDir === 'asc' ? 'asc' : 'desc' },
+    };
+    const orderBy = filters.sortBy && allowedSort[filters.sortBy]
+      ? allowedSort[filters.sortBy]
+      : { createdAt: 'desc' };
+
     const [data, total] = await Promise.all([
       this.prisma.lead.findMany({
         where,
@@ -56,7 +65,7 @@ export class LeadsService {
           assignedUser: { select: { id: true, name: true, avatar: true } },
           _count: { select: { activities: true, visits: true } },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         skip: filters.skip || 0,
         take: filters.take || 50,
       }),

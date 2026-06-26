@@ -24,9 +24,11 @@ export class LeadsController {
     @Query('search') search?: string,
     @Query('skip', new DefaultValuePipe(0), ParseIntPipe) skip?: number,
     @Query('take', new DefaultValuePipe(50), ParseIntPipe) take?: number,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortDir') sortDir?: string,
   ) {
     return this.leadsService.findAll(user.companyId, {
-      status, origin, pipelineStage, assignedUserId, search, skip, take,
+      status, origin, pipelineStage, assignedUserId, search, skip, take, sortBy, sortDir,
     });
   }
 
