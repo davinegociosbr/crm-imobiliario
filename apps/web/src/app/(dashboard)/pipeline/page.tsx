@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { Phone, MessageCircle, Calendar, Briefcase, X, Loader2, Plus, StickyNote, Clock, Palette, Trash2, Pencil, Check, CheckCircle2, Circle, Search, Filter, History, ArrowUpDown, ArrowUp, ArrowDown, ArrowDownAZ, ExternalLink } from 'lucide-react';
+import { Phone, MessageCircle, Calendar, Briefcase, X, Loader2, Plus, StickyNote, Clock, Palette, Trash2, Pencil, Check, CheckCircle2, Circle, Search, Filter, History, ArrowUpDown, ArrowUp, ArrowDown, ArrowDownAZ, ExternalLink, ZoomIn, ZoomOut } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
@@ -836,6 +836,27 @@ export default function PipelinePage() {
     setColumnSorts(prev => ({ ...prev, [stage]: value }));
   };
 
+  // Zoom do funil (50% a 120%) salvo no localStorage para persistir entre sessões
+  const ZOOM_MIN = 0.5, ZOOM_MAX = 1.2, ZOOM_STEP = 0.1;
+  const [zoom, setZoom] = useState<number>(() => {
+    if (typeof window === 'undefined') return 1;
+    const saved = parseFloat(localStorage.getItem('pipeline-zoom') || '1');
+    return isNaN(saved) ? 1 : Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, saved));
+  });
+
+  const changeZoom = (delta: number) => {
+    setZoom(prev => {
+      const next = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round((prev + delta) * 10) / 10));
+      localStorage.setItem('pipeline-zoom', String(next));
+      return next;
+    });
+  };
+
+  const resetZoom = () => {
+    setZoom(1);
+    localStorage.setItem('pipeline-zoom', '1');
+  };
+
   // Cores salvas no localStorage para persistir entre sessões
   const [stageColors, setStageColors] = useState<Record<string, string>>(() => {
     if (typeof window === 'undefined') return {};
@@ -943,7 +964,33 @@ export default function PipelinePage() {
             <X className="w-3.5 h-3.5" /> Limpar filtros
           </button>
         )}
-        <p className="text-xs text-slate-400 ml-auto hidden sm:block">
+        {/* Controle de zoom */}
+        <div className="flex items-center gap-0.5 border rounded-lg bg-white dark:bg-slate-900 dark:border-slate-700 px-1 py-1 ml-auto">
+          <button
+            onClick={() => changeZoom(-ZOOM_STEP)}
+            disabled={zoom <= ZOOM_MIN}
+            title="Diminuir zoom"
+            className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            <ZoomOut className="w-4 h-4" />
+          </button>
+          <button
+            onClick={resetZoom}
+            title="Restaurar zoom (100%)"
+            className="text-xs font-medium text-slate-600 dark:text-slate-300 w-10 text-center hover:text-blue-600 transition-colors"
+          >
+            {Math.round(zoom * 100)}%
+          </button>
+          <button
+            onClick={() => changeZoom(ZOOM_STEP)}
+            disabled={zoom >= ZOOM_MAX}
+            title="Aumentar zoom"
+            className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            <ZoomIn className="w-4 h-4" />
+          </button>
+        </div>
+        <p className="text-xs text-slate-400 hidden lg:block">
           Clique para editar • Arraste para mover • <Palette className="w-3 h-3 inline" /> muda cor
         </p>
       </div>
@@ -980,7 +1027,7 @@ export default function PipelinePage() {
       </div>
 
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex gap-4 flex-1 overflow-x-auto pb-4">
+        <div className="flex gap-4 flex-1 overflow-x-auto pb-4" style={{ zoom }}>
           {visibleStages.map((stage) => {
             const stageInfo = allStageInfo[stage] || { label: stage, color: 'bg-slate-500' };
             const color = stageColors[stage] || stageInfo.color;
