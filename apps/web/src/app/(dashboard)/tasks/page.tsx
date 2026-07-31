@@ -244,6 +244,22 @@ function EditTaskModal({ task, onClose, onSaved }: { task: any; onClose: () => v
   const [recurrenceEnd, setRecurrenceEnd] = useState(task.recurrenceEnd ? new Date(task.recurrenceEnd).toISOString().slice(0, 10) : '');
   const [saving, setSaving] = useState(false);
 
+  // Ocorrências (filhas de uma tarefa recorrente) não guardam a própria configuração de
+  // recorrência — ela vive na tarefa-modelo. Busca a config real da série para o formulário
+  // refletir e permitir alterar/desligar a recorrência corretamente.
+  const { data: recurrence } = useQuery({
+    queryKey: ['task-recurrence', task.id],
+    queryFn: () => api.get(`/tasks/${task.id}/recurrence`).then(r => r.data),
+  });
+
+  useEffect(() => {
+    if (!recurrence) return;
+    setRecurrenceType(recurrence.recurrenceType || '');
+    setRecurrenceDays(recurrence.recurrenceDays || []);
+    setRecurrenceDay(recurrence.recurrenceDay || 1);
+    setRecurrenceEnd(recurrence.recurrenceEnd ? new Date(recurrence.recurrenceEnd).toISOString().slice(0, 10) : '');
+  }, [recurrence]);
+
   const today = new Date();
   const todayStr = today.toISOString().slice(0, 16);
   const tomorrowStr = new Date(today.getTime() + 86400000).toISOString().slice(0, 16);

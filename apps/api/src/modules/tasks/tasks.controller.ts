@@ -30,6 +30,11 @@ export class TasksController {
     return this.service.getOverdue(user.companyId);
   }
 
+  @Get(':id/recurrence')
+  getRecurrence(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.service.getRecurrence(id, user.companyId);
+  }
+
   @Post()
   create(@CurrentUser() user: any, @Body() dto: any) {
     return this.service.create(user.companyId, user.id, dto);
