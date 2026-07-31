@@ -83,7 +83,7 @@ export class TasksService implements OnModuleInit {
   }
 
   async update(id: string, companyId: string, dto: any) {
-    const task = await this.prisma.task.findFirst({ where: { id, companyId }, select: { id: true } });
+    const task = await this.prisma.task.findFirst({ where: { id, companyId } });
     if (!task) throw new NotFoundException('Tarefa não encontrada');
 
     const { recurrenceType, recurrenceDays, recurrenceEnd, recurrenceDay, dueAt, completedAt, ...rest } = dto;
@@ -91,14 +91,66 @@ export class TasksService implements OnModuleInit {
     const data: any = { ...rest };
 
     if (dueAt !== undefined) data.dueAt = dueAt ? new Date(dueAt) : null;
-    if (completedAt !== undefined) data.completedAt = completedAt ? new Date(completedAt) : null;
-    if (dto.status === 'COMPLETED' && !data.completedAt) data.completedAt = new Date();
-    if (recurrenceType !== undefined) data.recurrenceType = recurrenceType || null;
-    if (recurrenceDays !== undefined) data.recurrenceDays = recurrenceDays;
-    if (recurrenceDay !== undefined) data.recurrenceDay = recurrenceDay || null;
-    if (recurrenceEnd !== undefined) data.recurrenceEnd = recurrenceEnd ? new Date(recurrenceEnd) : null;
+    if (completedAt !== undefined) {
+      data.completedAt = completedAt ? new Date(completedAt) : null;
+    } else if (dto.status === 'COMPLETED') {
+      data.completedAt = new Date();
+    } else if (dto.status && dto.status !== 'COMPLETED') {
+      data.completedAt = null;
+    }
 
-    return this.prisma.task.update({ where: { id }, data });
+    const updated = await this.prisma.task.update({ where: { id }, data });
+
+    // Ocorrências (filhas) não guardam a própria configuração de recorrência — ela vive
+    // na tarefa-modelo (pai). Redireciona qualquer alteração de recorrência para a série.
+    const changesRecurrence = recurrenceType !== undefined || recurrenceDays !== undefined
+      || recurrenceDay !== undefined || recurrenceEnd !== undefined;
+
+    if (changesRecurrence) {
+      const seriesId = task.parentTaskId || id;
+      const recData: any = {};
+      if (recurrenceType !== undefined) recData.recurrenceType = recurrenceType || null;
+      if (recurrenceDays !== undefined) recData.recurrenceDays = recurrenceDays || [];
+      if (recurrenceDay !== undefined) recData.recurrenceDay = recurrenceDay || null;
+      if (recurrenceEnd !== undefined) recData.recurrenceEnd = recurrenceEnd ? new Date(recurrenceEnd) : null;
+
+      const series = await this.prisma.task.update({ where: { id: seriesId }, data: recData });
+
+      // Descarta ocorrências futuras ainda pendentes — serão regeneradas com a nova regra
+      // (ou não, se a recorrência foi desligada)
+      await this.prisma.task.deleteMany({
+        where: {
+          parentTaskId: seriesId,
+          status: { in: ['PENDING', 'IN_PROGRESS'] },
+          id: { not: id },
+          dueAt: { gt: new Date() },
+        },
+      });
+
+      if (series.recurrenceType) {
+        await this.generateOccurrences(series, 60);
+      }
+    }
+
+    return updated;
+  }
+
+  // Retorna a configuração de recorrência real da série (resolve para a tarefa-modelo
+  // quando o id informado é de uma ocorrência filha)
+  async getRecurrence(id: string, companyId: string) {
+    const task = await this.prisma.task.findFirst({ where: { id, companyId } });
+    if (!task) throw new NotFoundException('Tarefa não encontrada');
+
+    const series = task.parentTaskId
+      ? await this.prisma.task.findFirst({ where: { id: task.parentTaskId, companyId } })
+      : task;
+
+    return {
+      recurrenceType: series?.recurrenceType ?? null,
+      recurrenceDays: series?.recurrenceDays ?? [],
+      recurrenceDay: series?.recurrenceDay ?? null,
+      recurrenceEnd: series?.recurrenceEnd ?? null,
+    };
   }
 
   async remove(id: string, companyId: string) {
