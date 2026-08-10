@@ -943,8 +943,16 @@ export default function PipelinePage() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Buscar lead..."
-            className="w-full pl-9 pr-4 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 dark:border-slate-700"
+            className="w-full pl-9 pr-8 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 dark:border-slate-700"
           />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
         <select
           value={originFilter}
