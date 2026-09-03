@@ -17,6 +17,8 @@ const PIPELINE_OPTIONS = Object.entries(PIPELINE_STAGES).map(([value, info]) => 
   label: info.label,
 }));
 
+const inputClass = 'w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500';
+
 export function LeadModal({ lead, onClose }: Props) {
   const qc = useQueryClient();
   const [addToPipeline, setAddToPipeline] = useState(false);
@@ -65,43 +67,43 @@ export function LeadModal({ lead, onClose }: Props) {
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
               <label className="block text-sm font-medium mb-1">Nome *</label>
-              <input {...register('name', { required: true })} className="input-field" placeholder="Nome completo" />
+              <input {...register('name', { required: true })} className={inputClass} placeholder="Nome completo" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Telefone *</label>
-              <input {...register('phone', { required: true })} className="input-field" placeholder="(11) 99999-0000" />
+              <input {...register('phone', { required: true })} className={inputClass} placeholder="(11) 99999-0000" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">WhatsApp</label>
-              <input {...register('whatsapp')} className="input-field" placeholder="(11) 99999-0000" />
+              <input {...register('whatsapp')} className={inputClass} placeholder="(11) 99999-0000" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">E-mail</label>
-              <input {...register('email')} type="email" className="input-field" placeholder="email@exemplo.com" />
+              <input {...register('email')} type="email" className={inputClass} placeholder="email@exemplo.com" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">CPF</label>
-              <input {...register('cpf')} className="input-field" placeholder="000.000.000-00" />
+              <input {...register('cpf')} className={inputClass} placeholder="000.000.000-00" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Cidade</label>
-              <input {...register('city')} className="input-field" placeholder="São Paulo" />
+              <input {...register('city')} className={inputClass} placeholder="São Paulo" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Estado</label>
-              <input {...register('state')} className="input-field" placeholder="SP" maxLength={2} />
+              <input {...register('state')} className={inputClass} placeholder="SP" maxLength={2} />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Faixa de Investimento</label>
-              <input {...register('investmentRange')} className="input-field" placeholder="R$ 500k - R$ 1M" />
+              <input {...register('investmentRange')} className={inputClass} placeholder="R$ 500k - R$ 1M" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Faixa de Renda</label>
-              <input {...register('incomeRange')} className="input-field" placeholder="R$ 10k - R$ 20k/mês" />
+              <input {...register('incomeRange')} className={inputClass} placeholder="R$ 10k - R$ 20k/mês" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Origem</label>
-              <select {...register('origin')} className="input-field">
+              <select {...register('origin')} className={inputClass}>
                 {Object.entries(LEAD_ORIGINS).map(([k, v]) => (
                   <option key={k} value={k}>{v}</option>
                 ))}
@@ -109,11 +111,11 @@ export function LeadModal({ lead, onClose }: Props) {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Valor Potencial (R$)</label>
-              <input {...register('potentialValue')} type="number" className="input-field" placeholder="850000" />
+              <input {...register('potentialValue')} type="number" className={inputClass} placeholder="850000" />
             </div>
             <div className="col-span-2">
               <label className="block text-sm font-medium mb-1">Interesse</label>
-              <input {...register('interest')} className="input-field" placeholder="Apartamento 3 dorms, Moema..." />
+              <input {...register('interest')} className={inputClass} placeholder="Apartamento 3 dorms, Moema..." />
             </div>
           </div>
 
@@ -179,19 +181,6 @@ export function LeadModal({ lead, onClose }: Props) {
           </div>
         </form>
       </div>
-
-      <style jsx>{`
-        .input-field {
-          width: 100%;
-          padding: 8px 12px;
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
-          font-size: 14px;
-          outline: none;
-          background: white;
-        }
-        .input-field:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
-      `}</style>
     </div>
   );
 }

@@ -20,6 +20,8 @@ import { LeadModal } from '@/components/leads/lead-modal';
 const TABS = ['Dados', 'Timeline', 'Notas', 'Visitas', 'Propostas', 'Tarefas', 'Simulação'] as const;
 type Tab = typeof TABS[number];
 
+const inputClass = 'w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500';
+
 export default function LeadDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -346,7 +348,7 @@ export default function LeadDetailPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Tipo *</label>
-                  <select {...register('type', { required: true })} className="input-field">
+                  <select {...register('type', { required: true })} className={inputClass}>
                     {Object.entries(ACTIVITY_TYPES).map(([k, v]) => (
                       <option key={k} value={k}>{v.label}</option>
                     ))}
@@ -354,19 +356,19 @@ export default function LeadDetailPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Próxima Ação</label>
-                  <input {...register('nextAction')} className="input-field" placeholder="Ex: Enviar proposta..." />
+                  <input {...register('nextAction')} className={inputClass} placeholder="Ex: Enviar proposta..." />
                 </div>
                 <div className="col-span-2">
                   <label className="block text-sm font-medium mb-1">Descrição *</label>
-                  <textarea {...register('description', { required: true })} className="input-field" rows={2} placeholder="O que aconteceu nessa interação?" />
+                  <textarea {...register('description', { required: true })} className={inputClass} rows={2} placeholder="O que aconteceu nessa interação?" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Data do Próximo Contato</label>
-                  <input {...register('nextContactAt')} type="datetime-local" className="input-field" />
+                  <input {...register('nextContactAt')} type="datetime-local" className={inputClass} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Observações</label>
-                  <input {...register('notes')} className="input-field" placeholder="Informações adicionais..." />
+                  <input {...register('notes')} className={inputClass} placeholder="Informações adicionais..." />
                 </div>
               </div>
               <div className="flex gap-3 pt-1">
@@ -570,19 +572,6 @@ export default function LeadDetailPage() {
       )}
 
       {showEdit && <LeadModal lead={lead} onClose={() => { setShowEdit(false); qc.invalidateQueries({ queryKey: ['lead', id] }); }} />}
-
-      <style jsx>{`
-        .input-field {
-          width: 100%;
-          padding: 8px 12px;
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
-          font-size: 14px;
-          outline: none;
-          background: white;
-        }
-        .input-field:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
-      `}</style>
     </div>
   );
 }
