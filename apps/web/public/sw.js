@@ -1,4 +1,4 @@
-const CACHE_NAME = 'crm-brolezi-v2';
+const CACHE_NAME = 'crm-brolezi-v3';
 const STATIC_ASSETS = [
   '/',
   '/dashboard',
