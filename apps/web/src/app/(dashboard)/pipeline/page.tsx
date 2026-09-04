@@ -47,6 +47,11 @@ const STAGES = ['INITIAL_CONTACT', 'REDIRECT', 'ATTENDANCE', 'TODAY', 'FOLLOW_UP
 function NoteCard({ activity: a, leadId, onRefresh }: { activity: any; leadId: string; onRefresh: () => void }) {
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(a.description);
+  const [editNextAction, setEditNextAction] = useState(a.nextAction || '');
+  const [editNextContactAt, setEditNextContactAt] = useState(
+    a.nextContactAt ? new Date(a.nextContactAt).toISOString().split('T')[0] : ''
+  );
+  const [editNotes, setEditNotes] = useState(a.notes || '');
   const qc = useQueryClient();
 
   const deleteMutation = useMutation({
@@ -56,10 +61,23 @@ function NoteCard({ activity: a, leadId, onRefresh }: { activity: any; leadId: s
   });
 
   const editMutation = useMutation({
-    mutationFn: () => api.put(`/activities/${a.id}`, { description: editText }),
+    mutationFn: () => api.put(`/activities/${a.id}`, {
+      description: editText,
+      nextAction: editNextAction || null,
+      nextContactAt: editNextContactAt ? `${editNextContactAt}T12:00:00` : null,
+      notes: editNotes || null,
+    }),
     onSuccess: () => { onRefresh(); setEditing(false); toast.success('Nota atualizada'); },
     onError: () => toast.error('Erro ao editar nota'),
   });
+
+  const cancelEdit = () => {
+    setEditing(false);
+    setEditText(a.description);
+    setEditNextAction(a.nextAction || '');
+    setEditNextContactAt(a.nextContactAt ? new Date(a.nextContactAt).toISOString().split('T')[0] : '');
+    setEditNotes(a.notes || '');
+  };
 
   const toggleMutation = useMutation({
     mutationFn: () => api.patch(`/activities/${a.id}/toggle-completed`),
@@ -86,6 +104,35 @@ function NoteCard({ activity: a, leadId, onRefresh }: { activity: any; leadId: s
                 className="w-full p-2 text-sm border border-slate-600 rounded-lg bg-slate-700 text-slate-100 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
                 autoFocus
               />
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[11px] font-medium text-slate-400 mb-1 block">Próxima ação</label>
+                  <input
+                    value={editNextAction}
+                    onChange={e => setEditNextAction(e.target.value)}
+                    placeholder="Ligar, enviar proposta..."
+                    className="w-full p-2 text-sm border border-slate-600 rounded-lg bg-slate-700 text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-medium text-slate-400 mb-1 block">Data do próximo contato</label>
+                  <input
+                    type="date"
+                    value={editNextContactAt}
+                    onChange={e => setEditNextContactAt(e.target.value)}
+                    className="w-full p-2 text-sm border border-slate-600 rounded-lg bg-slate-700 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-[11px] font-medium text-slate-400 mb-1 block">Observações</label>
+                  <input
+                    value={editNotes}
+                    onChange={e => setEditNotes(e.target.value)}
+                    placeholder="Informações adicionais..."
+                    className="w-full p-2 text-sm border border-slate-600 rounded-lg bg-slate-700 text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => editMutation.mutate()}
@@ -95,7 +142,7 @@ function NoteCard({ activity: a, leadId, onRefresh }: { activity: any; leadId: s
                   <Check className="w-3 h-3" /> Salvar
                 </button>
                 <button
-                  onClick={() => { setEditing(false); setEditText(a.description); }}
+                  onClick={cancelEdit}
                   className="px-3 py-1 border border-slate-600 text-slate-400 rounded-lg text-xs"
                 >
                   Cancelar
@@ -109,7 +156,7 @@ function NoteCard({ activity: a, leadId, onRefresh }: { activity: any; leadId: s
           )}
 
           {/* Próxima ação */}
-          {a.nextAction && (
+          {!editing && a.nextAction && (
             <div className="flex items-center gap-1.5 mt-2 text-xs text-amber-500">
               <Clock className="w-3 h-3" />
               <span>{a.nextAction}</span>
@@ -117,7 +164,7 @@ function NoteCard({ activity: a, leadId, onRefresh }: { activity: any; leadId: s
           )}
 
           {/* Data do próximo contato */}
-          {nextContactDate && (
+          {!editing && nextContactDate && (
             <div className={`flex items-center gap-1.5 mt-1.5 text-xs font-medium ${
               contactOverdue ? 'text-red-500' : 'text-green-500'
             }`}>
@@ -130,7 +177,7 @@ function NoteCard({ activity: a, leadId, onRefresh }: { activity: any; leadId: s
           )}
 
           {/* Observações */}
-          {a.notes && (
+          {!editing && a.notes && (
             <div className="mt-1.5 text-xs text-slate-400">
               <span className="font-medium">Obs:</span> {a.notes}
             </div>
