@@ -692,12 +692,14 @@
       linhas.push(`Valor: ${fmt(valorSaldoA)}`);
       linhas.push(`Saldo líquido (após entrada): ${fmt(saldoALiquido)}`);
       linhas.push(`Parcelas: ${qtdParcelasA}x`);
-      linhas.push(`• Parcela mensal: *${fmt(parcelaSemReforcoA)}*`);
-      reforcosA.forEach((r, i) => {
+      linhas.push(`• *Opção 1* — Sem reforço: parcela *${fmt(parcelaSemReforcoA)}*/mês`);
+      let opcaoA = 1;
+      reforcosA.forEach((r) => {
         if (r.checked && (r.qty > 0 || r.val > 0)) {
+          opcaoA++;
           const saldo = saldoALiquido - r.total;
           const parcela = qtdParcelasA > 0 ? saldo / qtdParcelasA : 0;
-          linhas.push(`• *Opção ${i + 1}* — Reforço ${r.qty}x de ${fmt(r.val)}: parcela *${fmt(parcela)}*/mês`);
+          linhas.push(`• *Opção ${opcaoA}* — Reforço ${r.qty}x de ${fmt(r.val)}: parcela *${fmt(parcela)}*/mês`);
         }
       });
     }
@@ -712,9 +714,11 @@
       if (pctA === 0) linhas.push(`Saldo a financiar (imóvel − entrada): *${fmt(saldoBLiquido)}*`);
       else linhas.push(`Valor: ${fmt(valorSaldoB)}`);
       linhas.push(`Parcelas: ${qtdParcelasExibB}x`);
-      linhas.push(`• Parcela mensal: *${fmt(parcelaBLiquida)}*`);
-      reforcosB.forEach((r, i) => {
+      linhas.push(`• *Opção 1* — Sem reforço: parcela *${fmt(parcelaBLiquida)}*/mês`);
+      let opcaoB = 1;
+      reforcosB.forEach((r) => {
         if (r.checked && (r.qty > 0 || r.val > 0)) {
+          opcaoB++;
           const base = pctA === 0
             ? (metodoB === 'corbetta' ? saldoBLiquido * (tabelaCorbetta[prazoCorbetta] / baseCorbetta) : price(saldoBLiquido, taxaJuros, qtdParcelasB))
             : parcelaSemReforcoB;
@@ -724,7 +728,7 @@
           const descReforco = metodoB === 'corbetta'
             ? `Reforço anual de ${fmt(r.val)} (${r.qty}x)`
             : `Reforço ${r.qty}x de ${fmt(r.val)}`;
-          linhas.push(`• *Opção ${i + 1}* — ${descReforco}: parcela *${fmt(base - red)}*/mês`);
+          linhas.push(`• *Opção ${opcaoB}* — ${descReforco}: parcela *${fmt(base - red)}*/mês`);
         }
       });
     }
