@@ -693,11 +693,11 @@
       linhas.push(`Saldo líquido (após entrada): ${fmt(saldoALiquido)}`);
       linhas.push(`Parcelas: ${qtdParcelasA}x`);
       linhas.push(`• Parcela mensal: *${fmt(parcelaSemReforcoA)}*`);
-      reforcosA.forEach((r) => {
+      reforcosA.forEach((r, i) => {
         if (r.checked && (r.qty > 0 || r.val > 0)) {
           const saldo = saldoALiquido - r.total;
           const parcela = qtdParcelasA > 0 ? saldo / qtdParcelasA : 0;
-          linhas.push(`• Reforço ${r.qty}x de ${fmt(r.val)}: parcela *${fmt(parcela)}*/mês`);
+          linhas.push(`• *Opção ${i + 1}* — Reforço ${r.qty}x de ${fmt(r.val)}: parcela *${fmt(parcela)}*/mês`);
         }
       });
     }
@@ -713,7 +713,7 @@
       else linhas.push(`Valor: ${fmt(valorSaldoB)}`);
       linhas.push(`Parcelas: ${qtdParcelasExibB}x`);
       linhas.push(`• Parcela mensal: *${fmt(parcelaBLiquida)}*`);
-      reforcosB.forEach((r) => {
+      reforcosB.forEach((r, i) => {
         if (r.checked && (r.qty > 0 || r.val > 0)) {
           const base = pctA === 0
             ? (metodoB === 'corbetta' ? saldoBLiquido * (tabelaCorbetta[prazoCorbetta] / baseCorbetta) : price(saldoBLiquido, taxaJuros, qtdParcelasB))
@@ -724,7 +724,7 @@
           const descReforco = metodoB === 'corbetta'
             ? `Reforço anual de ${fmt(r.val)} (${r.qty}x)`
             : `Reforço ${r.qty}x de ${fmt(r.val)}`;
-          linhas.push(`• ${descReforco}: parcela *${fmt(base - red)}*/mês`);
+          linhas.push(`• *Opção ${i + 1}* — ${descReforco}: parcela *${fmt(base - red)}*/mês`);
         }
       });
     }
