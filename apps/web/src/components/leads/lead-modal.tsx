@@ -1,28 +1,34 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { X, Loader2, Kanban } from 'lucide-react';
 import { api } from '@/lib/api';
-import { LEAD_ORIGINS, PIPELINE_STAGES } from '@/lib/utils';
+import { LEAD_ORIGINS } from '@/lib/utils';
+import { usePipelineStages } from '@/hooks/usePipelineStages';
 
 interface Props {
   lead?: any;
   onClose: () => void;
 }
 
-const PIPELINE_OPTIONS = Object.entries(PIPELINE_STAGES).map(([value, info]) => ({
-  value,
-  label: info.label,
-}));
-
 const inputClass = 'w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500';
 
 export function LeadModal({ lead, onClose }: Props) {
   const qc = useQueryClient();
   const [addToPipeline, setAddToPipeline] = useState(false);
-  const [pipelineStage, setPipelineStage] = useState('INITIAL_CONTACT');
+  const { visibleStages, stageInfo } = usePipelineStages();
+  const pipelineOptions = visibleStages.map((key) => ({ value: key, label: stageInfo[key]?.label || key }));
+  const [pipelineStage, setPipelineStage] = useState('');
+
+  // Seleciona a primeira etapa real do funil assim que as etapas configuradas carregarem
+  useEffect(() => {
+    if (pipelineOptions.length && !pipelineOptions.some((o) => o.value === pipelineStage)) {
+      setPipelineStage(pipelineOptions[0].value);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibleStages.join(',')]);
 
   const { register, handleSubmit, formState: { isSubmitting } } = useForm({
     defaultValues: lead || {},
@@ -146,7 +152,7 @@ export function LeadModal({ lead, onClose }: Props) {
                 <div className="px-4 pb-4">
                   <label className="block text-xs font-medium text-slate-500 mb-2">Etapa do funil</label>
                   <div className="grid grid-cols-2 gap-2">
-                    {PIPELINE_OPTIONS.map(opt => (
+                    {pipelineOptions.map(opt => (
                       <button
                         key={opt.value}
                         type="button"

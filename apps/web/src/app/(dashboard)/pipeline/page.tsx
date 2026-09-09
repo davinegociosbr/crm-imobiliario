@@ -7,7 +7,8 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { api } from '@/lib/api';
-import { PIPELINE_STAGES, LEAD_ORIGINS, formatDateTime, LEAD_STATUS } from '@/lib/utils';
+import { LEAD_ORIGINS, formatDateTime, LEAD_STATUS } from '@/lib/utils';
+import { usePipelineStages } from '@/hooks/usePipelineStages';
 
 // ─── Paleta de cores disponíveis ────────────────────────────────────────────
 const COLOR_OPTIONS = [
@@ -40,8 +41,6 @@ const COLOR_PREVIEW: Record<string, string> = {
   'bg-teal-500':   '#14b8a6',
   'bg-lime-500':   '#84cc16',
 };
-
-const STAGES = ['INITIAL_CONTACT', 'REDIRECT', 'ATTENDANCE', 'TODAY', 'FOLLOW_UP', 'CLIENTS', 'INACTIVE'] as const;
 
 // ─── Card de nota individual ──────────────────────────────────────────────────
 function NoteCard({ activity: a, leadId, onRefresh }: { activity: any; leadId: string; onRefresh: () => void }) {
@@ -921,32 +920,7 @@ export default function PipelinePage() {
     queryFn: () => api.get('/pipeline/kanban').then((r) => r.data),
   });
 
-  const { data: company } = useQuery({
-    queryKey: ['company'],
-    queryFn: () => api.get('/company').then(r => r.data),
-  });
-  const companySettings = (company?.settings || {}) as any;
-  const deletedStages: string[] = companySettings.deletedPipelineStages || [];
-  const customStages: { key: string; label: string; color: string }[] = companySettings.customPipelineStages || [];
-  const stageLabels: Record<string, string> = companySettings.stageLabels || {};
-  const stageOrder: string[] = companySettings.stageOrder || [];
-
-  // Build visible stages: defaults (not deleted) + custom, respecting saved order
-  const allKeys = [
-    ...STAGES.filter(s => !deletedStages.includes(s)),
-    ...customStages.map(c => c.key),
-  ];
-  const visibleStages = stageOrder.length
-    ? [...stageOrder.filter(k => allKeys.includes(k)), ...allKeys.filter(k => !stageOrder.includes(k))]
-    : allKeys;
-
-  // Build stage info (label + color) combining defaults and custom
-  const allStageInfo: Record<string, { label: string; color: string }> = {
-    ...Object.fromEntries(
-      Object.entries(PIPELINE_STAGES).map(([k, v]) => [k, { label: stageLabels[k] || v.label, color: v.color }])
-    ),
-    ...Object.fromEntries(customStages.map(c => [c.key, { label: c.label, color: c.color }])),
-  };
+  const { visibleStages, stageInfo: allStageInfo } = usePipelineStages();
 
   const moveMutation = useMutation({
     mutationFn: ({ leadId, stage }: { leadId: string; stage: string }) =>
