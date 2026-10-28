@@ -42,7 +42,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Script id="register-sw" strategy="afterInteractive">{`
           if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
-              navigator.serviceWorker.register('/sw.js');
+              navigator.serviceWorker.register('/sw.js').then(function(reg) {
+                // Força checar se existe uma versão nova sempre que o app volta a ficar visível/em foco
+                document.addEventListener('visibilitychange', function() {
+                  if (document.visibilityState === 'visible') reg.update();
+                });
+                window.addEventListener('focus', function() { reg.update(); });
+              });
+
+              // Quando uma versão nova assume o controle, recarrega automaticamente
+              // a página — elimina a necessidade de fechar e reabrir o app manualmente
+              var refreshing = false;
+              navigator.serviceWorker.addEventListener('controllerchange', function() {
+                if (refreshing) return;
+                refreshing = true;
+                window.location.reload();
+              });
             });
           }
         `}</Script>
