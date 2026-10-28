@@ -240,6 +240,11 @@ function LeadDetailModal({ lead, onClose }: { lead: any; onClose: () => void }) 
     defaultValues: lead,
   });
 
+  // Força remontar o campo de data ao limpá-lo — alguns navegadores (Safari em
+  // especial) não atualizam visualmente um <input type="date"> quando o valor
+  // é limpo só via setValue, sem o DOM remontar.
+  const [dateFieldKey, setDateFieldKey] = useState(0);
+
   // Sincroniza formulário quando leadFull carregar (inclui campos null como data)
   useEffect(() => {
     if (leadFull) {
@@ -413,10 +418,13 @@ function LeadDetailModal({ lead, onClose }: { lead: any; onClose: () => void }) 
                 <div>
                   <label className="field-label">Data do Próximo Contato</label>
                   <div className="flex gap-1.5">
-                    <input {...register('nextContactAt')} type="date" className="field-input flex-1" />
+                    <input key={dateFieldKey} {...register('nextContactAt')} type="date" className="field-input flex-1" />
                     <button
                       type="button"
-                      onClick={() => setValue('nextContactAt', '', { shouldDirty: true })}
+                      onClick={() => {
+                        setValue('nextContactAt', '', { shouldDirty: true });
+                        setDateFieldKey((k) => k + 1);
+                      }}
                       title="Limpar data"
                       className="px-2.5 rounded-lg border border-slate-600 text-slate-400 hover:text-red-400 hover:border-red-400 transition-colors shrink-0"
                     >
