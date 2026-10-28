@@ -1,4 +1,4 @@
-const CACHE_NAME = 'crm-brolezi-v3';
+const CACHE_NAME = 'crm-brolezi-v4';
 const STATIC_ASSETS = [
   '/',
   '/dashboard',
@@ -25,6 +25,11 @@ self.addEventListener('activate', (event) => {
 
 // Estratégia: Network first, fallback para cache
 self.addEventListener('fetch', (event) => {
+  // Nunca intercepta o carregamento de página (navegação) — deixa o navegador
+  // buscar sempre a versão mais atual direto do servidor. Isso evita que o app
+  // instalado fique "preso" numa versão antiga mesmo depois de um novo deploy.
+  if (event.request.mode === 'navigate') return;
+
   // Ignora requisições de API e extensões do Chrome
   if (
     event.request.url.includes('/api/') ||
