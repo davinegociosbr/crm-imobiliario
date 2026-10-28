@@ -236,7 +236,7 @@ function LeadDetailModal({ lead, onClose }: { lead: any; onClose: () => void }) 
     queryFn: () => api.get(`/leads/${lead.id}`).then(r => r.data),
   });
 
-  const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm({
+  const { register, handleSubmit, reset, setValue, formState: { isSubmitting } } = useForm({
     defaultValues: lead,
   });
 
@@ -412,7 +412,17 @@ function LeadDetailModal({ lead, onClose }: { lead: any; onClose: () => void }) 
                 </div>
                 <div>
                   <label className="field-label">Data do Próximo Contato</label>
-                  <input {...register('nextContactAt')} type="date" className="field-input" />
+                  <div className="flex gap-1.5">
+                    <input {...register('nextContactAt')} type="date" className="field-input flex-1" />
+                    <button
+                      type="button"
+                      onClick={() => setValue('nextContactAt', '', { shouldDirty: true })}
+                      title="Limpar data"
+                      className="px-2.5 rounded-lg border border-slate-600 text-slate-400 hover:text-red-400 hover:border-red-400 transition-colors shrink-0"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
               <button
