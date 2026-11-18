@@ -28,13 +28,28 @@ export class PublicService {
   }
 
   async submitLead(slug: string, dto: any) {
+    // Honeypot: campo invisível que só bots preenchem — finge sucesso sem criar o lead
+    if (dto._hp) {
+      return { success: true, message: 'Cadastro realizado com sucesso!' };
+    }
+
     const company = await this.prisma.company.findFirst({
       where: { settings: { path: ['formSlug'], equals: slug } },
       select: { id: true, settings: true },
     });
     if (!company) throw new NotFoundException('Formulário não encontrado');
 
-    if (!dto.name || !dto.phone) throw new BadRequestException('Nome e telefone são obrigatórios');
+    const name = String(dto.name || '').trim();
+    const phoneDigits = String(dto.phone || '').replace(/\D/g, '');
+    if (!name || !phoneDigits) throw new BadRequestException('Nome e telefone são obrigatórios');
+    if (name.length > 150) throw new BadRequestException('Nome muito longo');
+    if (phoneDigits.length < 10 || phoneDigits.length > 11) throw new BadRequestException('Telefone inválido');
+    if (dto.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(dto.email))) {
+      throw new BadRequestException('E-mail inválido');
+    }
+
+    const capped = (v: unknown, max: number) => (v ? String(v).trim().slice(0, max) : null);
+    const whatsappDigits = dto.whatsapp ? String(dto.whatsapp).replace(/\D/g, '') : phoneDigits;
 
     const settings: any = company.settings || {};
     const assignedUserId: string | null = settings.formAssignedUserId || null;
@@ -43,14 +58,14 @@ export class PublicService {
       data: {
         companyId: company.id,
         assignedUserId: assignedUserId || undefined,
-        name: String(dto.name).trim(),
-        phone: String(dto.phone).replace(/\D/g, ''),
-        whatsapp: dto.whatsapp ? String(dto.whatsapp).replace(/\D/g, '') : String(dto.phone).replace(/\D/g, ''),
-        email: dto.email || null,
-        interest: dto.interest || null,
-        city: dto.city || null,
+        name,
+        phone: phoneDigits,
+        whatsapp: whatsappDigits,
+        email: capped(dto.email, 150),
+        interest: capped(dto.interest, 300),
+        city: capped(dto.city, 100),
         origin: dto.origin || 'OTHER',
-        notes: dto.notes || null,
+        notes: capped(dto.notes, 1000),
         status: 'NEW',
         pipelineStage: 'INITIAL_CONTACT',
       },

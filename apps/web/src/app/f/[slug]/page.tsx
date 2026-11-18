@@ -48,6 +48,7 @@ export default function PublicFormPage() {
   const [form, setForm] = useState({
     name: '', phone: '', whatsapp: '', email: '',
     interest: '', city: '', origin: '', notes: '',
+    _hp: '', // honeypot — campo invisível; só bots costumam preencher
   });
 
   useEffect(() => {
@@ -128,6 +129,18 @@ export default function PublicFormPage() {
         {/* Form */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
+
+            {/* Honeypot — invisível para humanos, bots de spam costumam preencher todos os campos */}
+            <input
+              type="text"
+              name="website"
+              value={form._hp}
+              onChange={e => set('_hp', e.target.value)}
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+              className="absolute -left-[9999px] w-px h-px opacity-0"
+            />
 
             {fields.includes('name') && (
               <div>

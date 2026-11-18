@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -54,6 +55,11 @@ import { PublicModule } from './modules/public/public.module';
     PushModule,
     FinancialModule,
     PublicModule,
+  ],
+  providers: [
+    // Aplica o rate limiting configurado no ThrottlerModule a todas as rotas
+    // (estava registrado mas nunca era de fato aplicado em nenhuma requisição)
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
 export class AppModule {}
