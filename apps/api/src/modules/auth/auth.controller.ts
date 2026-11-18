@@ -1,4 +1,5 @@
 import { Controller, Post, Get, Body, UseGuards, Put } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -16,6 +17,8 @@ export class AuthController {
     return this.authService.register(dto);
   }
 
+  // Limite mais rígido que o padrão global — dificulta tentativas de força bruta
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);

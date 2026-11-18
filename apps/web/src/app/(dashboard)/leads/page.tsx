@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { formatDate, LEAD_STATUS, LEAD_ORIGINS, formatCurrency } from '@/lib/utils';
 import { LeadModal } from '@/components/leads/lead-modal';
+import { QueryError } from '@/components/ui/query-error';
 
 const PIPELINE_STAGE_OPTIONS = [
   { value: 'INITIAL_CONTACT', label: 'Contato Inicial' },
@@ -146,7 +147,7 @@ export default function LeadsPage() {
     }
   };
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['leads', search, statusFilter, page, sortField, sortDir],
     queryFn: () =>
       api.get('/leads', { params: { search, status: statusFilter || undefined, skip: page * PAGE_SIZE, take: PAGE_SIZE, sortBy: sortField || undefined, sortDir: sortField ? sortDir : undefined } }).then((r) => r.data),
@@ -183,6 +184,7 @@ export default function LeadsPage() {
 
   return (
     <div className="space-y-4">
+      {isError && <QueryError onRetry={() => refetch()} />}
       <div className="flex flex-col sm:flex-row sm:items-center gap-2">
         <div className="flex items-center gap-2 flex-1">
           <div className="relative flex-1">
