@@ -10,8 +10,17 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api/v1');
 
+  // Restringe CORS ao domínio real do frontend (em vez de refletir qualquer
+  // origem) — aceita também previews da Vercel e localhost para desenvolvimento.
+  const allowedOrigin = process.env.FRONTEND_URL;
   app.enableCors({
-    origin: true,
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true); // chamadas sem Origin (ex: apps mobile, curl)
+      if (allowedOrigin && origin === allowedOrigin) return callback(null, true);
+      if (/^https?:\/\/localhost(:\d+)?$/.test(origin)) return callback(null, true);
+      if (/\.vercel\.app$/.test(new URL(origin).hostname)) return callback(null, true);
+      callback(new Error('Não permitido pelo CORS'), false);
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
