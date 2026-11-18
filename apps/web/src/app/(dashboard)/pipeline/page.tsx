@@ -9,6 +9,7 @@ import { useForm } from 'react-hook-form';
 import { api } from '@/lib/api';
 import { LEAD_ORIGINS, formatDateTime, LEAD_STATUS } from '@/lib/utils';
 import { usePipelineStages } from '@/hooks/usePipelineStages';
+import { QueryError } from '@/components/ui/query-error';
 
 // ─── Paleta de cores disponíveis ────────────────────────────────────────────
 const COLOR_OPTIONS = [
@@ -912,7 +913,7 @@ export default function PipelinePage() {
     localStorage.setItem('pipeline-colors', JSON.stringify(updated));
   };
 
-  const { data: kanban } = useQuery<Record<string, any[]>>({
+  const { data: kanban, isError: kanbanError, refetch: refetchKanban } = useQuery<Record<string, any[]>>({
     queryKey: ['pipeline-kanban'],
     queryFn: () => api.get('/pipeline/kanban').then((r) => r.data),
   });
@@ -953,6 +954,7 @@ export default function PipelinePage() {
 
   return (
     <div className="h-full flex flex-col">
+      {kanbanError && <QueryError message="Não foi possível carregar o funil de vendas." onRetry={() => refetchKanban()} />}
       {/* Barra de busca + filtros */}
       <div className="flex items-center gap-3 mb-4 flex-wrap">
         <div className="relative flex-1 min-w-[200px] max-w-xs">

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
+import { QueryError } from '@/components/ui/query-error';
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -43,7 +44,7 @@ function MetricCard({ title, value, icon: Icon, color, sub }: any) {
 }
 
 export default function DashboardPage() {
-  const { data: metrics } = useQuery<Metric>({
+  const { data: metrics, isError: metricsError, refetch: refetchMetrics } = useQuery<Metric>({
     queryKey: ['dashboard-metrics'],
     queryFn: () => api.get('/dashboard/metrics').then((r) => r.data),
   });
@@ -82,6 +83,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {metricsError && <QueryError message="Não foi possível carregar as métricas do dashboard." onRetry={() => refetchMetrics()} />}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard title="Total de Leads" value={metrics?.totalLeads || 0} icon={Users} color="bg-blue-600" sub="Leads ativos (excl. perdidos)" />
         <MetricCard title="Leads Novos" value={metrics?.newLeads || 0} icon={ArrowUpRight} color="bg-indigo-500" sub="Cadastrados, ainda sem funil" />
