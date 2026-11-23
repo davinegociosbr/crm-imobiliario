@@ -498,8 +498,8 @@ export default function TasksPage() {
           return (
             <div
               key={task.id}
-              className={`bg-white dark:bg-slate-900 rounded-xl border transition-all ${
-                done ? 'opacity-50 border-slate-100 dark:border-slate-800' : overdue ? 'border-red-200 dark:border-red-900' : 'border-slate-200 dark:border-slate-800'
+              className={`bg-white dark:bg-slate-900 rounded-xl border shadow-sm transition-all ${
+                done ? 'opacity-50 border-slate-100 dark:border-slate-800' : overdue ? 'border-red-200 dark:border-red-900 hover:shadow-md' : 'border-slate-200 dark:border-slate-800 hover:shadow-md'
               }`}
             >
               <div className="flex items-start gap-3 p-4">
