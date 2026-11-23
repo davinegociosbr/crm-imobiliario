@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { Phone, MessageCircle, Calendar, Briefcase, X, Loader2, Plus, StickyNote, Clock, Palette, Trash2, Pencil, Check, CheckCircle2, Circle, Search, Filter, History, ArrowUpDown, ArrowUp, ArrowDown, ArrowDownAZ, ExternalLink, ZoomIn, ZoomOut } from 'lucide-react';
+import { Calendar, Briefcase, X, Loader2, Plus, StickyNote, Clock, Palette, Trash2, Pencil, Check, CheckCircle2, Circle, Search, Filter, History, ArrowUpDown, ArrowUp, ArrowDown, ArrowDownAZ, ExternalLink, ZoomIn, ZoomOut } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
@@ -705,11 +705,27 @@ function LeadCard({ lead, index, onOpen }: { lead: any; index: number; onOpen: (
           }`}
           onClick={() => !snapshot.isDragging && onOpen(lead)}
         >
-          {/* Linha 1: Nome + data */}
-          <div className="flex items-start justify-between gap-1 mb-1">
+          {/* Linha 1: Nome + ações + data */}
+          <div className="flex items-center justify-between gap-1 mb-1">
             <p className={`font-semibold text-xs leading-tight line-clamp-1 flex-1 ${isOverdue ? 'text-red-800 dark:text-red-200' : noDate ? 'text-amber-900 dark:text-amber-200' : 'text-slate-900 dark:text-white'}`}>
               {lead.name}
             </p>
+            <div className="flex items-center gap-0.5 shrink-0" onClick={e => e.stopPropagation()}>
+              <Link
+                href={`/leads/${lead.id}?tab=timeline`}
+                title="Ver detalhes"
+                className="w-5 h-5 rounded-md bg-slate-50 dark:bg-slate-700 text-slate-400 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/40 hover:text-blue-600 flex items-center justify-center transition-colors"
+              >
+                <ExternalLink className="w-3 h-3" />
+              </Link>
+              <button
+                onClick={handleDelete}
+                title="Excluir lead"
+                className="w-5 h-5 rounded-md bg-red-50 dark:bg-red-900/40 text-red-400 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-800/50 hover:text-red-600 flex items-center justify-center transition-colors"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            </div>
             {isOverdue ? (
               <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md shrink-0 bg-red-500 text-white animate-pulse">
                 ⚠ VENCIDO
@@ -735,45 +751,8 @@ function LeadCard({ lead, index, onOpen }: { lead: any; index: number; onOpen: (
 
           {/* Linha 2: Interesse */}
           {lead.interest && (
-            <p className="text-[11px] text-blue-500 dark:text-blue-400 line-clamp-1 mb-1">{lead.interest}</p>
+            <p className="text-[11px] text-blue-500 dark:text-blue-400 line-clamp-1">{lead.interest}</p>
           )}
-
-          {/* Linha 3: Ações */}
-          <div className="flex items-center gap-1 pt-1.5 border-t border-slate-100 dark:border-slate-700">
-            <a
-              href={`tel:${lead.phone}`}
-              onClick={e => e.stopPropagation()}
-              className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-800/50 text-[10px] font-medium transition-colors"
-            >
-              <Phone className="w-2.5 h-2.5" /> Ligar
-            </a>
-            {lead.whatsapp && (
-              <a
-                href={`https://web.whatsapp.com/send?phone=55${lead.whatsapp?.replace(/\D/g, '')}&text=${encodeURIComponent(`Olá ${lead.name.split(' ')[0]}, tudo bem? Passando para dar um retorno sobre o atendimento. Podemos conversar?`)}`}
-                target="whatsapp_web"
-                onClick={e => e.stopPropagation()}
-                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-green-50 dark:bg-green-900/40 text-green-600 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-800/50 text-[10px] font-medium transition-colors"
-              >
-                <MessageCircle className="w-2.5 h-2.5" /> WA
-              </a>
-            )}
-            <div className="flex gap-0.5 ml-auto items-center" onClick={e => e.stopPropagation()}>
-              <Link
-                href={`/leads/${lead.id}?tab=timeline`}
-                title="Ver timeline"
-                className="w-5 h-5 rounded-md bg-slate-50 dark:bg-slate-700 text-slate-400 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/40 hover:text-blue-600 flex items-center justify-center transition-colors"
-              >
-                <ExternalLink className="w-3 h-3" />
-              </Link>
-              <button
-                onClick={handleDelete}
-                title="Excluir lead"
-                className="w-5 h-5 rounded-md bg-red-50 dark:bg-red-900/40 text-red-400 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-800/50 hover:text-red-600 flex items-center justify-center ml-1 transition-colors"
-              >
-                <Trash2 className="w-3 h-3" />
-              </button>
-            </div>
-          </div>
         </div>
       )}
     </Draggable>
