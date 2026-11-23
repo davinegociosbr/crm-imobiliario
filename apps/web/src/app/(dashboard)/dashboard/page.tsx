@@ -29,13 +29,13 @@ const COLORS = ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981'];
 
 function MetricCard({ title, value, icon: Icon, color, sub }: any) {
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 flex items-start gap-4">
-      <div className={`p-3 rounded-xl ${color}`}>
+    <div className="group bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow duration-200 flex items-start gap-4">
+      <div className={`p-3 rounded-xl ${color} shadow-sm group-hover:scale-105 transition-transform duration-200`}>
         <Icon className="w-5 h-5 text-white" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-slate-500 dark:text-slate-400">{title}</p>
-        <p className="text-2xl font-bold text-slate-900 dark:text-white mt-0.5">{value}</p>
+        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{title}</p>
+        <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1 tabular-nums">{value}</p>
         {sub && <p className="text-xs text-slate-400 mt-1">{sub}</p>}
       </div>
     </div>
@@ -97,7 +97,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
           <h3 className="font-semibold text-slate-800 dark:text-white mb-4">Vendas por Mês</h3>
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={salesByMonth || []}>
@@ -116,7 +116,7 @@ export default function DashboardPage() {
           </ResponsiveContainer>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
           <h3 className="font-semibold text-slate-800 dark:text-white mb-4">Leads por Origem</h3>
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
@@ -132,7 +132,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
           <h3 className="font-semibold text-slate-800 dark:text-white mb-4">Leads por Etapa do Funil</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={pipelineStages || []} layout="vertical">
@@ -145,7 +145,7 @@ export default function DashboardPage() {
           </ResponsiveContainer>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
           <h3 className="font-semibold text-slate-800 dark:text-white mb-4">Performance dos Corretores</h3>
           <div className="space-y-3">
             {(brokers || []).map((b: any) => (

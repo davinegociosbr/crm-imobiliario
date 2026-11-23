@@ -694,7 +694,7 @@ function LeadCard({ lead, index, onOpen }: { lead: any; index: number; onOpen: (
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          className={`rounded-lg p-2.5 border shadow-sm cursor-grab active:cursor-grabbing transition-all ${
+          className={`rounded-xl p-3 border shadow-sm cursor-grab active:cursor-grabbing transition-all ${
             snapshot.isDragging
               ? 'bg-white dark:bg-slate-700 shadow-lg ring-2 ring-blue-500 border-blue-400'
               : isOverdue
@@ -711,11 +711,11 @@ function LeadCard({ lead, index, onOpen }: { lead: any; index: number; onOpen: (
               {lead.name}
             </p>
             {isOverdue ? (
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 bg-red-500 text-white animate-pulse">
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md shrink-0 bg-red-500 text-white animate-pulse">
                 ⚠ VENCIDO
               </span>
             ) : (
-              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded shrink-0 ${
+              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md shrink-0 ${
                 noDate
                   ? 'bg-amber-200 text-amber-800 dark:bg-amber-700/50 dark:text-amber-200'
                   : 'bg-green-50 text-green-700 dark:bg-green-800/40 dark:text-green-300'
@@ -743,7 +743,7 @@ function LeadCard({ lead, index, onOpen }: { lead: any; index: number; onOpen: (
             <a
               href={`tel:${lead.phone}`}
               onClick={e => e.stopPropagation()}
-              className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-800/50 text-[10px] font-medium"
+              className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-800/50 text-[10px] font-medium transition-colors"
             >
               <Phone className="w-2.5 h-2.5" /> Ligar
             </a>
@@ -752,7 +752,7 @@ function LeadCard({ lead, index, onOpen }: { lead: any; index: number; onOpen: (
                 href={`https://web.whatsapp.com/send?phone=55${lead.whatsapp?.replace(/\D/g, '')}&text=${encodeURIComponent(`Olá ${lead.name.split(' ')[0]}, tudo bem? Passando para dar um retorno sobre o atendimento. Podemos conversar?`)}`}
                 target="whatsapp_web"
                 onClick={e => e.stopPropagation()}
-                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-green-50 dark:bg-green-900/40 text-green-600 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-800/50 text-[10px] font-medium"
+                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-green-50 dark:bg-green-900/40 text-green-600 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-800/50 text-[10px] font-medium transition-colors"
               >
                 <MessageCircle className="w-2.5 h-2.5" /> WA
               </a>
@@ -761,14 +761,14 @@ function LeadCard({ lead, index, onOpen }: { lead: any; index: number; onOpen: (
               <Link
                 href={`/leads/${lead.id}?tab=timeline`}
                 title="Ver timeline"
-                className="w-5 h-5 rounded bg-slate-50 dark:bg-slate-700 text-slate-400 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/40 hover:text-blue-600 flex items-center justify-center transition-colors"
+                className="w-5 h-5 rounded-md bg-slate-50 dark:bg-slate-700 text-slate-400 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/40 hover:text-blue-600 flex items-center justify-center transition-colors"
               >
                 <ExternalLink className="w-3 h-3" />
               </Link>
               <button
                 onClick={handleDelete}
                 title="Excluir lead"
-                className="w-5 h-5 rounded bg-red-50 dark:bg-red-900/40 text-red-400 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-800/50 hover:text-red-600 flex items-center justify-center ml-1 transition-colors"
+                className="w-5 h-5 rounded-md bg-red-50 dark:bg-red-900/40 text-red-400 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-800/50 hover:text-red-600 flex items-center justify-center ml-1 transition-colors"
               >
                 <Trash2 className="w-3 h-3" />
               </button>
@@ -1106,7 +1106,7 @@ export default function PipelinePage() {
             const hiddenOnMobile = mobileStage !== null && mobileStage !== stage;
             return (
               <div key={stage} className={`shrink-0 flex flex-col w-full md:w-72 ${hiddenOnMobile ? 'hidden md:flex' : ''}`}>
-                <div className={`rounded-lg ${color} text-white mb-2`}>
+                <div className={`rounded-xl ${color} text-white mb-2 shadow-sm`}>
                   <div className="flex items-center justify-between px-3 py-2">
                     <span className="font-medium text-sm">{stageInfo.label}</span>
                     <div className="flex items-center gap-1">
